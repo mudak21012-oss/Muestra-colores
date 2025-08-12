@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Hoho3D – Rueda de Color + Búsqueda + Vista previa</title>
+  <title>Hoho3D – Rueda de Color + Búsqueda + Vista previa</title> 
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     :root{ --bg:#0b0c0f; --card:#111317; --muted:#9aa1ac; --text:#e8ecf1; --accent:#3b82f6; }
     *{ box-sizing:border-box }
@@ -19,12 +20,12 @@
 
     .app{ display:grid; grid-template-columns: 420px minmax(380px, 540px); gap:20px; padding:20px; max-width:1100px; margin:0 auto; align-items:start }
 
-    .left{ background:var(--card); border:1px solid #1b1f28; border-radius:14px; paddinhttps://docs.google.com/spreadsheets/d/1FykEVXKzTU-R0iw50vXhCZHdrofiBCMBVPjKE5qwhFQ/edit?gid=0#gid=0g:16px }
+    .left{ background:var(--card); border:1px solid #1b1f28; border-radius:14px; padding:16px }
     #loading{ display:none; font-size:14px; color:var(--muted); margin-bottom:8px }
     #wheel{ width:360px; height:360px; display:block; margin:8px auto 10px; border-radius:12px; border:1px solid #1b1f28; cursor:crosshair }
     .current{ display:flex; gap:8px; align-items:center; font-size:14px; color:var(--muted); margin-bottom:10px }
     .current .sw{ width:20px; height:20px; border-radius:6px; border:1px solid #1b1f28 }
-    .preview-img{ width:100%; max-width:380px; height:220px; object-fit:covhttps:https://docs.google.com/spreadsheets/d/e/2PACX-1vTZ-GFIahnmzB09C1GWCvAs1PaNXmpN2_Ed5taWtseTRlqx0P8-ZKJ28TOsvziFOw/pub?output=csv; border-radius:12px; border:1px solid #1b1f28; display:block; margin:10px auto 0 }
+    .preview-img{ width:100%; max-width:380px; height:220px; object-fit:cover; border-radius:12px; border:1px solid #1b1f28; display:block; margin:10px auto 0 }
 
     .right{ display:grid; gap:14px }
     .card{ background:var(--card); border:1px solid #1b1f28; border-radius:14px; padding:16px }
@@ -43,6 +44,12 @@
     .sub small{ color:var(--muted) }
     .sub .btn-mini{ padding:6px 10px; font-size:13px }
 
+    .lightbox { position:fixed; inset:0; background:rgba(0,0,0,.85); display:none; align-items:center; justify-content:center; z-index:9999; }
+    .lightbox img { max-width:min(92vw,1200px); max-height:90vh; display:block; transform:scale(1); transition:transform .2s ease; cursor:zoom-in; }
+    .lightbox .close, .lightbox .zoom { position:absolute; top:12px; padding:8px 10px; border:0; border-radius:8px; background:#fff; cursor:pointer; }
+    .lightbox .close { right:12px; }
+    .lightbox .zoom { right:84px; }
+
     @media (max-width: 980px){ .app{ grid-template-columns: 1fr } #wheel{ width:100%; height:auto } }
   </style>
 </head>
@@ -50,7 +57,7 @@
   <header>
     <h1>Hoho3D · Búsqueda por color</h1>
     <div class="search" role="search">
-      <input id="q" class="input" type="search" placeholder="Buscar por nombre, marca o #hex exacto" autocomplete="off" />
+      <input id="q" class="input" type="search" placeholder="Buscar por color, marca o #hex exacto" autocomplete="off" />
       <div id="sugs" class="suggestions" role="listbox" aria-label="Resultados de búsqueda"></div>
     </div>
   </header>
@@ -107,8 +114,14 @@
     </section>
   </main>
 
+  <div class="lightbox" id="lightbox">
+    <button class="close" id="lb-close">Cerrar</button>
+    <button class="zoom" id="lb-zoom" aria-label="Zoom">🔍</button>
+    <img id="lb-img" alt="Imagen del filamento" />
+  </div>
+
   <script>
-    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTZ-GFIahnmzB09C1GWCvAs1PaNXmpN2_Ed5taWtseTRlqx0P8-ZKJ28TOsvziFOw/pub?output=csv";
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTZ-GFIahnmzB09C1GWCvAs1PaNXmpN2_Ed5taWtseTRlqx0P8-ZKJ28TOsvziFOw/pub?output=tsv";
 
     const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
     const norm = s => (s==null? '' : String(s).trim());
@@ -124,7 +137,7 @@
     function rgbToHex(r,g,b){ return '#'+[r,g,b].map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join(''); }
     function rgbFromHsv(h, s, v){
       h = Number(h); s = Number(s); v = Number(v);
-      if (s === 0) return {r:v, g:v, b:v};
+      if (s === 0) return {r:Math.round(v*255), g:Math.round(v*255), b:Math.round(v*255)};
       let i = Math.floor(h * 6);
       const f = h * 6 - i;
       const p = v * (1 - s);
@@ -144,6 +157,12 @@
     const wheel = document.getElementById('wheel');
     const ctx = wheel.getContext('2d');
     const CX = wheel.width/2, CY = wheel.height/2, R = 170;
+
+    let items = [];
+    let pool = [];
+    let lastRGB = null;
+    let dragging = false;
+
     function drawWheel(){
       const img = ctx.createImageData(wheel.width, wheel.height);
       for(let y=0; y<wheel.height; y++){
@@ -159,10 +178,6 @@
       ctx.putImageData(img,0,0);
     }
 
-    let items = [];
-    let pool = [];
-    let lastRGB = null;
-
     function colorDistance(a,b){ const dr=a.r-b.r, dg=a.g-b.g, db=a.b-b.b; return Math.sqrt(dr*dr+dg*dg+db*db); }
 
     async function cargar(){
@@ -173,8 +188,10 @@
         let text = await res.text();
         if(/<\s*html/i.test(text)) throw new Error('La URL devolvió HTML. Publica como TSV/CSV');
         text = text.replace(/^\uFEFF/, '').replace(/\r\n/g,'\n');
-        const rows = text.trim().split('\n').map(l=>l.split('\t'));
-        const headers = rows.shift().map(h=>h.toLowerCase());
+        const headLine = text.split('\n')[0];
+        const delim = headLine.includes('\t') ? '\t' : ',';
+        const rows = text.trim().split('\n').map(l=>l.split(delim));
+        const headers = rows.shift().map(h=>h.replace(/^"(.*)"$/,'$1').toLowerCase().trim());
         const ix = k => headers.indexOf(k);
         const idx = {
           name: headers.includes('name')? ix('name') : ix('nombre'),
@@ -184,7 +201,7 @@
           temp: headers.includes('temp')? ix('temp'): ix('temperatura'),
           strength: headers.includes('strength')? ix('strength'): ix('resistencia'),
           link: headers.includes('link')? ix('link'): ix('url'),
-          img: headers.includes('img')? ix('img'): (headers.includes('image')? ix('image'): ix('foto'))
+          img: headers.includes('img')? ix('img'): (headers.includes('image')? ix('image'): (headers.includes('foto')? ix('foto') : -1))
         };
         if (idx.hex === -1) throw new Error('Falta columna HEX');
         rows.forEach(r=>{
@@ -204,8 +221,7 @@
       finally{ el.style.display='none'; }
     }
 
-    function renderSide(top){
-      const [a,b,c] = top;
+    function renderMainCard(a){
       if (!a) return;
       document.getElementById('main-sw').style.background = a.hex;
       document.getElementById('main-name').textContent = a.name || 'Sin nombre';
@@ -217,9 +233,20 @@
       document.getElementById('main-hex').textContent = a.hex;
       document.getElementById('main-link').href = a.link || '#';
       const prev = document.getElementById('preview-img');
-      if (a.img){ prev.src = a.img; prev.alt = `Vista previa ${a.name}`; prev.style.visibility='visible'; prev.onerror = () => { prev.removeAttribute('src'); prev.style.visibility='hidden'; }; }
-      else { prev.removeAttribute('src'); prev.alt='Sin vista previa'; prev.style.visibility='hidden'; }
+      if (a.img){ 
+        prev.src = a.img; prev.alt = `Vista previa ${a.name}`; prev.style.visibility='visible';
+        prev.onerror = () => { prev.removeAttribute('src'); prev.style.visibility='hidden'; };
+        prev.onclick = () => { if (a.img) openLightbox(a.img); };
+      } else { 
+        prev.removeAttribute('src'); prev.alt='Sin vista previa'; prev.style.visibility='hidden'; 
+        prev.onclick = null;
+      }
+    }
 
+    function renderSide(top){
+      const [a,b,c] = top;
+      if (!a) return;
+      renderMainCard(a);
       const setSub = (sub, item) => {
         const sw = document.getElementById(sub+'-sw');
         const nm = document.getElementById(sub+'-name');
@@ -228,21 +255,13 @@
         if (!item){ sw.style.background='transparent'; nm.textContent='—'; ds.textContent='—'; btn.onclick=null; return; }
         sw.style.background = item.hex; nm.textContent = item.name || 'Sin nombre';
         ds.textContent = `${item.brand||'-'} · ${item.type||'-'} · ${item.style||'-'}`;
-        btn.onclick = () => renderSide([item]);
+        btn.onclick = (e) => { 
+          e.preventDefault(); e.stopPropagation();
+          renderMainCard(item);
+          if (item.img) openLightbox(item.img);
+        };
       };
       setSub('sub1', b); setSub('sub2', c);
-    }
-
-    function applySearch(q){
-      q = (q||'').trim().toLowerCase();
-      if (!q){ pool = items.slice(); hideSugs(); return; }
-      if (q.startsWith('#')){
-        const hx = normalizeHex(q) || '';
-        pool = items.filter(it => it.hex.startsWith(hx));
-      } else {
-        pool = items.filter(it => (it.name||'').toLowerCase().includes(q) || (it.brand||'').toLowerCase().includes(q));
-      }
-      renderSugs(q, pool);
     }
 
     function rankAndRenderBy(rgb){
@@ -298,12 +317,52 @@
 
     const inputQ = document.getElementById('q');
 
+    function openLightbox(src){
+      if (!src) return;
+      const lb = document.getElementById("lightbox"), img = document.getElementById("lb-img");
+      lbZoomed = false;
+      img.src = src;
+      img.style.transform = "scale(1)";
+      img.style.cursor = "zoom-in";
+      lb.style.display = "flex";
+    }
+    function closeLightbox(){
+      const lb = document.getElementById("lightbox"), img = document.getElementById("lb-img");
+      img.removeAttribute("src");
+      lb.style.display = "none";
+    }
+    let lbZoomed = false;
+    function toggleZoom(){
+      const img = document.getElementById("lb-img");
+      lbZoomed = !lbZoomed;
+      img.style.transform = lbZoomed ? "scale(1.5)" : "scale(1)";
+      img.style.cursor = lbZoomed ? "zoom-out" : "zoom-in";
+    }
+    document.getElementById("lb-close").addEventListener("click", closeLightbox);
+    document.getElementById("lb-zoom").addEventListener("click", toggleZoom);
+    document.getElementById("lightbox").addEventListener("click", (e)=>{ if (e.target.id === "lightbox") closeLightbox(); });
+    document.getElementById("lb-img").addEventListener("click", (e)=>{ e.stopPropagation(); });
+    window.addEventListener("keydown", (e)=>{ if (e.key === "Escape") closeLightbox(); });
+
     drawWheel();
     window.addEventListener('DOMContentLoaded', async ()=>{ await cargar(); });
     wheel.addEventListener('mousedown', onDown); window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
     wheel.addEventListener('touchstart', onDown, {passive:false}); window.addEventListener('touchmove', onMove, {passive:false}); window.addEventListener('touchend', onUp);
 
-    inputQ.addEventListener('input', (e)=>{ applySearch(e.target.value); if (lastRGB) rankAndRenderBy(lastRGB); });
+    inputQ.addEventListener('input', (e)=>{ const q=e.target.value; 
+      // reconstruye pool para buscar sobre todo el catálogo
+      pool = items.slice(); 
+      const qq=q.trim().toLowerCase();
+      if (!qq){ hideSugs(); if (lastRGB) rankAndRenderBy(lastRGB); return; }
+      if (qq.startsWith('#')){
+        const hx = normalizeHex(qq) || '';
+        pool = items.filter(it => it.hex.startsWith(hx));
+      } else {
+        pool = items.filter(it => (it.name||'').toLowerCase().includes(qq) || (it.brand||'').toLowerCase().includes(qq));
+      }
+      renderSugs(q, pool);
+      if (lastRGB) rankAndRenderBy(lastRGB);
+    });
     inputQ.addEventListener('focus', ()=>{ if (inputQ.value) renderSugs(inputQ.value, pool); });
     document.addEventListener('click', (e)=>{ const sugs=document.getElementById('sugs'); if (!sugs.contains(e.target) && e.target!==inputQ) hideSugs(); });
   </script>
