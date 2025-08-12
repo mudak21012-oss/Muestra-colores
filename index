@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hoho3D – Rueda de Color + Búsqueda + Vista previa</title>
+  <style>
+    :root{ --bg:#0b0c0f; --card:#111317; --muted:#9aa1ac; --text:#e8ecf1; --accent:#3b82f6; }
+    *{ box-sizing:border-box }
+    body{ margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Arial, "Noto Sans", sans-serif; color:var(--text); background:linear-gradient(120deg,#0b0c0f,#0f1218); }
+    header{ padding:12px 20px; border-bottom:1px solid #1b1f28; position:sticky; top:0; background:#0b0c0fd9; backdrop-filter:saturate(140%) blur(6px); display:flex; gap:12px; align-items:center }
+    header h1{ margin:0; font-size:16px; font-weight:600; letter-spacing:.2px; white-space:nowrap }
+    .search{ position:relative; display:flex; gap:8px; align-items:center; width:100%; max-width:520px; margin-left:auto }
+    .input{ width:100%; padding:8px 10px; border-radius:10px; border:1px solid #223047; background:#131824; color:#dbe6f7; font-size:14px }
+    .suggestions{ position:absolute; top:42px; left:0; right:0; max-height:320px; overflow:auto; background:var(--card); border:1px solid #1b1f28; border-radius:10px; padding:6px; display:none; z-index:10 }
+    .sug-item{ display:grid; grid-template-columns: 20px 1fr auto; gap:10px; align-items:center; padding:8px; border-radius:8px; cursor:pointer }
+    .sug-item:hover{ background:#0f1218 }
+    .sug-dot{ width:20px; height:20px; border-radius:6px; border:1px solid #1b1f28 }
+    .sug-meta{ color:var(--muted); font-size:12px }
+
+    .app{ display:grid; grid-template-columns: 420px minmax(380px, 540px); gap:20px; padding:20px; max-width:1100px; margin:0 auto; align-items:start }
+
+    .left{ background:var(--card); border:1px solid #1b1f28; border-radius:14px; paddinhttps://docs.google.com/spreadsheets/d/1FykEVXKzTU-R0iw50vXhCZHdrofiBCMBVPjKE5qwhFQ/edit?gid=0#gid=0g:16px }
+    #loading{ display:none; font-size:14px; color:var(--muted); margin-bottom:8px }
+    #wheel{ width:360px; height:360px; display:block; margin:8px auto 10px; border-radius:12px; border:1px solid #1b1f28; cursor:crosshair }
+    .current{ display:flex; gap:8px; align-items:center; font-size:14px; color:var(--muted); margin-bottom:10px }
+    .current .sw{ width:20px; height:20px; border-radius:6px; border:1px solid #1b1f28 }
+    .preview-img{ width:100%; max-width:380px; height:220px; object-fit:covhttps://docs.google.com/spreadsheets/d/1FykEVXKzTU-R0iw50vXhCZHdrofiBCMBVPjKE5qwhFQ/edit?gid=0#gid=0er; border-radius:12px; border:1px solid #1b1f28; display:block; margin:10px auto 0 }
+
+    .right{ display:grid; gap:14px }
+    .card{ background:var(--card); border:1px solid #1b1f28; border-radius:14px; padding:16px }
+    .card h2{ margin:0 0 6px 0; font-size:18px }
+    .meta{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; font-size:14px; color:var(--muted) }
+    .meta div strong{ color:var(--text); font-weight:600 }
+    .main-sw{ width:100%; height:110px; border-radius:10px; border:1px solid #1b1f28; margin-bottom:10px }
+    .actions{ display:flex; gap:8px; margin-top:8px }
+    .btn{ appearance:none; border:1px solid #223047; background:#131824; color:#dbe6f7; padding:8px 10px; border-radius:10px; font-size:14px; cursor:pointer }
+    .btn:hover{ border-color:#2b3a55 }
+
+    .subs{ display:grid; gap:10px }
+    .sub{ display:grid; grid-template-columns: 54px 1fr auto; gap:10px; align-items:center; padding:10px; border:1px solid #1b1f28; border-radius:12px; background:#0f1218 }
+    .sub .sw{ width:54px; height:44px; border-radius:8px; border:1px solid #1b1f28 }
+    .sub h3{ margin:0; font-size:15px }
+    .sub small{ color:var(--muted) }
+    .sub .btn-mini{ padding:6px 10px; font-size:13px }
+
+    @media (max-width: 980px){ .app{ grid-template-columns: 1fr } #wheel{ width:100%; height:auto } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Hoho3D · Búsqueda por color</h1>
+    <div class="search" role="search">
+      <input id="q" class="input" type="search" placeholder="Buscar por nombre, marca o #hex exacto" autocomplete="off" />
+      <div id="sugs" class="suggestions" role="listbox" aria-label="Resultados de búsqueda"></div>
+    </div>
+  </header>
+
+  <main class="app">
+    <section class="left">
+      <div id="loading">Cargando catálogo...</div>
+      <canvas id="wheel" width="360" height="360" aria-label="Rueda de color HSV"></canvas>
+      <div class="current">
+        <div class="sw" id="sel-sw"></div>
+        <div><strong>RGB:</strong> <span id="sel-rgb">—</span> · <strong>HEX:</strong> <span id="sel-hex">—</span></div>
+      </div>
+      <img id="preview-img" class="preview-img" alt="Vista previa de filamento" />
+    </section>
+
+    <section class="right">
+      <article class="card" id="main-card" aria-live="polite">
+        <div class="main-sw" id="main-sw"></div>
+        <h2 id="main-name">—</h2>
+        <div class="meta">
+          <div><strong>Marca:</strong> <span id="main-brand">—</span></div>
+          <div><strong>Tipo:</strong> <span id="main-type">—</span></div>
+          <div><strong>Estilo:</strong> <span id="main-style">—</span></div>
+          <div><strong>Temp.:</strong> <span id="main-temp">—</span></div>
+          <div><strong>Resist.:</strong> <span id="main-strength">—</span></div>
+          <div><strong>HEX:</strong> <span id="main-hex">—</span></div>
+        </div>
+        <div class="actions">
+          <a id="main-link" class="btn" href="#" target="_blank" rel="noopener">Abrir en tienda</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2 style="margin-bottom:8px">Otras sugerencias</h2>
+        <div class="subs">
+          <div class="sub" id="sub-1">
+            <div class="sw" id="sub1-sw"></div>
+            <div>
+              <h3 id="sub1-name">—</h3>
+              <small id="sub1-desc">—</small>
+            </div>
+            <button class="btn btn-mini" id="sub1-btn">Ver</button>
+          </div>
+          <div class="sub" id="sub-2">
+            <div class="sw" id="sub2-sw"></div>
+            <div>
+              <h3 id="sub2-name">—</h3>
+              <small id="sub2-desc">—</small>
+            </div>
+            <button class="btn btn-mini" id="sub2-btn">Ver</button>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTZ-GFIahnmzB09C1GWCvAs1PaNXmpN2_Ed5taWtseTRlqx0P8-ZKJ28TOsvziFOw/pub?output=tsv";
+
+    const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
+    const norm = s => (s==null? '' : String(s).trim());
+    function normalizeHex(h){
+      if (typeof h !== 'string') return null;
+      const s = h.trim();
+      const r3 = /^#?[0-9a-fA-F]{3}$/; const r6 = /^#?[0-9a-fA-F]{6}$/;
+      if (r3.test(s)){ const p=s.replace('#',''); return '#'+p.split('').map(c=>c+c).join('').toLowerCase(); }
+      if (r6.test(s)){ return '#'+s.replace('#','').toLowerCase(); }
+      return null;
+    }
+    function hexToRgb(hex){ const h=hex.replace('#',''); return { r:parseInt(h.slice(0,2),16), g:parseInt(h.slice(2,4),16), b:parseInt(h.slice(4,6),16) }; }
+    function rgbToHex(r,g,b){ return '#'+[r,g,b].map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join(''); }
+    function rgbFromHsv(h, s, v){
+      h = Number(h); s = Number(s); v = Number(v);
+      if (s === 0) return {r:v, g:v, b:v};
+      let i = Math.floor(h * 6);
+      const f = h * 6 - i;
+      const p = v * (1 - s);
+      const q = v * (1 - s * f);
+      const t = v * (1 - s * (1 - f));
+      i = i % 6;
+      let r,g,b;
+      if (i===0){ r=v; g=t; b=p; }
+      else if(i===1){ r=q; g=v; b=p; }
+      else if(i===2){ r=p; g=v; b=t; }
+      else if(i===3){ r=p; g=q; b=v; }
+      else if(i===4){ r=t; g=p; b=v; }
+      else { r=v; g=p; b=q; }
+      return { r: Math.round(r*255), g: Math.round(g*255), b: Math.round(b*255) };
+    }
+
+    const wheel = document.getElementById('wheel');
+    const ctx = wheel.getContext('2d');
+    const CX = wheel.width/2, CY = wheel.height/2, R = 170;
+    function drawWheel(){
+      const img = ctx.createImageData(wheel.width, wheel.height);
+      for(let y=0; y<wheel.height; y++){
+        for(let x=0; x<wheel.width; x++){
+          const dx = x - CX, dy = y - CY; const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist <= R){
+            let angle = Math.atan2(dy, dx); if (angle < 0) angle += Math.PI*2;
+            const hue = angle/(Math.PI*2), sat = dist/R; const {r,g,b} = rgbFromHsv(hue, sat, 1);
+            const i = (y*wheel.width + x) * 4; img.data[i]=r; img.data[i+1]=g; img.data[i+2]=b; img.data[i+3]=255;
+          }
+        }
+      }
+      ctx.putImageData(img,0,0);
+    }
+
+    let items = [];
+    let pool = [];
+    let lastRGB = null;
+
+    function colorDistance(a,b){ const dr=a.r-b.r, dg=a.g-b.g, db=a.b-b.b; return Math.sqrt(dr*dr+dg*dg+db*db); }
+
+    async function cargar(){
+      const el = document.getElementById('loading'); el.style.display='block';
+      try{
+        const res = await fetch(sheetUrl, {cache:'no-store', mode:'cors'});
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        let text = await res.text();
+        if(/<\s*html/i.test(text)) throw new Error('La URL devolvió HTML. Publica como TSV/CSV');
+        text = text.replace(/^\uFEFF/, '').replace(/\r\n/g,'\n');
+        const rows = text.trim().split('\n').map(l=>l.split('\t'));
+        const headers = rows.shift().map(h=>h.toLowerCase());
+        const ix = k => headers.indexOf(k);
+        const idx = {
+          name: headers.includes('name')? ix('name') : ix('nombre'),
+          hex: ix('hex'), brand: headers.includes('brand')? ix('brand'): ix('marca'),
+          type: headers.includes('type')? ix('type'): ix('tipo'),
+          style: headers.includes('style')? ix('style'): ix('estilo'),
+          temp: headers.includes('temp')? ix('temp'): ix('temperatura'),
+          strength: headers.includes('strength')? ix('strength'): ix('resistencia'),
+          link: headers.includes('link')? ix('link'): ix('url'),
+          img: headers.includes('img')? ix('img'): (headers.includes('image')? ix('image'): ix('foto'))
+        };
+        if (idx.hex === -1) throw new Error('Falta columna HEX');
+        rows.forEach(r=>{
+          const hex = normalizeHex(r[idx.hex]||''); if(!hex) return;
+          const name = idx.name!==-1? norm(r[idx.name]) : '';
+          const brand = idx.brand!==-1? norm(r[idx.brand]) : '';
+          const type = idx.type!==-1? norm(r[idx.type]) : '';
+          const style = idx.style!==-1? norm(r[idx.style]) : '';
+          const temp = idx.temp!==-1? norm(r[idx.temp]) : '';
+          const strength = idx.strength!==-1? norm(r[idx.strength]) : '';
+          const link = idx.link!==-1? norm(r[idx.link]) : '#';
+          const img = idx.img!==-1? norm(r[idx.img]) : '';
+          items.push({ name, hex, rgb:hexToRgb(hex), brand, type, style, temp, strength, link, img });
+        });
+        pool = items.slice();
+      }catch(e){ console.error(e); }
+      finally{ el.style.display='none'; }
+    }
+
+    function renderSide(top){
+      const [a,b,c] = top;
+      if (!a) return;
+      document.getElementById('main-sw').style.background = a.hex;
+      document.getElementById('main-name').textContent = a.name || 'Sin nombre';
+      document.getElementById('main-brand').textContent = a.brand || '-';
+      document.getElementById('main-type').textContent = a.type || '-';
+      document.getElementById('main-style').textContent = a.style || '-';
+      document.getElementById('main-temp').textContent = a.temp || '-';
+      document.getElementById('main-strength').textContent = a.strength || '-';
+      document.getElementById('main-hex').textContent = a.hex;
+      document.getElementById('main-link').href = a.link || '#';
+      const prev = document.getElementById('preview-img');
+      if (a.img){ prev.src = a.img; prev.alt = `Vista previa ${a.name}`; prev.style.visibility='visible'; prev.onerror = () => { prev.removeAttribute('src'); prev.style.visibility='hidden'; }; }
+      else { prev.removeAttribute('src'); prev.alt='Sin vista previa'; prev.style.visibility='hidden'; }
+
+      const setSub = (sub, item) => {
+        const sw = document.getElementById(sub+'-sw');
+        const nm = document.getElementById(sub+'-name');
+        const ds = document.getElementById(sub+'-desc');
+        const btn = document.getElementById(sub+'-btn');
+        if (!item){ sw.style.background='transparent'; nm.textContent='—'; ds.textContent='—'; btn.onclick=null; return; }
+        sw.style.background = item.hex; nm.textContent = item.name || 'Sin nombre';
+        ds.textContent = `${item.brand||'-'} · ${item.type||'-'} · ${item.style||'-'}`;
+        btn.onclick = () => renderSide([item]);
+      };
+      setSub('sub1', b); setSub('sub2', c);
+    }
+
+    function applySearch(q){
+      q = (q||'').trim().toLowerCase();
+      if (!q){ pool = items.slice(); hideSugs(); return; }
+      if (q.startsWith('#')){
+        const hx = normalizeHex(q) || '';
+        pool = items.filter(it => it.hex.startsWith(hx));
+      } else {
+        pool = items.filter(it => (it.name||'').toLowerCase().includes(q) || (it.brand||'').toLowerCase().includes(q));
+      }
+      renderSugs(q, pool);
+    }
+
+    function rankAndRenderBy(rgb){
+      if (!pool.length) return;
+      const ranked = pool.map(it=>({it, d: colorDistance(rgb, it.rgb)})).sort((a,b)=>a.d-b.d).slice(0,3).map(x=>x.it);
+      renderSide(ranked);
+    }
+
+    function updateFromPoint(clientX, clientY){
+      const rect = wheel.getBoundingClientRect();
+      const scaleX = wheel.width / rect.width;
+      const scaleY = wheel.height / rect.height;
+      const x = (clientX - rect.left) * scaleX;
+      const y = (clientY - rect.top) * scaleY;
+      const dx = x - CX, dy = y - CY; const dist = Math.sqrt(dx*dx+dy*dy);
+      if (dist>R) return;
+      let ang = Math.atan2(dy, dx); if (ang<0) ang += Math.PI*2;
+      const hue = ang/(Math.PI*2), sat = dist/R; const {r,g,b} = rgbFromHsv(hue, sat, 1);
+      const hex = rgbToHex(r,g,b);
+      lastRGB = {r,g,b};
+      document.getElementById('sel-rgb').textContent = `${r}, ${g}, ${b}`;
+      document.getElementById('sel-hex').textContent = hex;
+      document.getElementById('sel-sw').style.background = hex;
+      rankAndRenderBy({r,g,b});
+    }
+
+    function onDown(e){ dragging=true; const p=e.touches? e.touches[0]: e; updateFromPoint(p.clientX,p.clientY); }
+    function onMove(e){ if(!dragging) return; const p=e.touches? e.touches[0]: e; updateFromPoint(p.clientX,p.clientY); }
+    function onUp(){ dragging=false; }
+
+    function showSugs(){ document.getElementById('sugs').style.display='block'; }
+    function hideSugs(){ document.getElementById('sugs').style.display='none'; document.getElementById('sugs').innerHTML=''; }
+    function renderSugs(q, list){
+      const box = document.getElementById('sugs');
+      box.innerHTML = '';
+      if (!q){ hideSugs(); return; }
+      const LIM = 100;
+      const out = list.slice(0, LIM);
+      if (!out.length){ hideSugs(); return; }
+      out.forEach(it => {
+        const div = document.createElement('div');
+        div.className = 'sug-item';
+        const dot = document.createElement('span'); dot.className='sug-dot'; dot.style.background = it.hex;
+        const text = document.createElement('div');
+        text.innerHTML = `<strong>${it.name || '(Sin nombre)'}</strong><div class="sug-meta">${it.brand || '-'} · ${it.hex}</div>`;
+        const go = document.createElement('div'); go.textContent = 'ver'; go.style.fontSize='12px'; go.style.color='var(--accent)';
+        div.appendChild(dot); div.appendChild(text); div.appendChild(go);
+        div.onclick = () => { hideSugs(); document.getElementById('q').value = it.name || it.hex; pool = items.slice(); lastRGB = it.rgb; document.getElementById('sel-sw').style.background = it.hex; document.getElementById('sel-hex').textContent = it.hex; document.getElementById('sel-rgb').textContent = `${it.rgb.r}, ${it.rgb.g}, ${it.rgb.b}`; rankAndRenderBy(it.rgb); };
+        box.appendChild(div);
+      });
+      showSugs();
+    }
+
+    const inputQ = document.getElementById('q');
+
+    drawWheel();
+    window.addEventListener('DOMContentLoaded', async ()=>{ await cargar(); });
+    wheel.addEventListener('mousedown', onDown); window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+    wheel.addEventListener('touchstart', onDown, {passive:false}); window.addEventListener('touchmove', onMove, {passive:false}); window.addEventListener('touchend', onUp);
+
+    inputQ.addEventListener('input', (e)=>{ applySearch(e.target.value); if (lastRGB) rankAndRenderBy(lastRGB); });
+    inputQ.addEventListener('focus', ()=>{ if (inputQ.value) renderSugs(inputQ.value, pool); });
+    document.addEventListener('click', (e)=>{ const sugs=document.getElementById('sugs'); if (!sugs.contains(e.target) && e.target!==inputQ) hideSugs(); });
+  </script>
+</body>
+</html>
