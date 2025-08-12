@@ -351,7 +351,7 @@ function toggleZoom(){
   img.style.transform = zoomed ? "scale(1.8)" : "scale(1)";
   img.style.cursor = zoomed ? "zoom-out" : "zoom-in";
 }
-
+document.getElementById("lb-img").addEventListener("dblclick", (e)=>{ e.stopPropagation(); toggleZoom(); });
 document.getElementById("lb-close").addEventListener("click", closeLightbox);
 document.getElementById("lb-zoom").addEventListener("click", (e)=>{ e.stopPropagation(); toggleZoom(); });
 document.getElementById("lightbox").addEventListener("click", (e)=>{ if (e.target.id === "lightbox") closeLightbox(); });
