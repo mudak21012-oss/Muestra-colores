@@ -87,7 +87,6 @@
           <a id="main-link" class="btn" href="#" target="_blank" rel="noopener">Abrir en tienda</a>
         </div>
 
-        <!-- Botón para ideas + salida -->
         <div class="actions" style="margin-top:6px">
           <button id="btn-ideas" class="btn" type="button">Pedir ideas con este color</button>
         </div>
@@ -303,8 +302,8 @@
     function renderSugs(q, list){
       const box = document.getElementById('sugs');
       box.innerHTML = '';
-      if (!q){ hideSugs(); return; }
       const LIM = 100;
+      if (!q){ hideSugs(); return; }
       const out = list.slice(0, LIM);
       if (!out.length){ hideSugs(); return; }
       out.forEach(it => {
@@ -362,8 +361,11 @@
     inputQ.addEventListener('focus', ()=>{ if (inputQ.value) renderSugs(inputQ.value, pool); });
     document.addEventListener('click', (e)=>{ const sugs=document.getElementById('sugs'); if (!sugs.contains(e.target) && e.target!==inputQ) hideSugs(); });
 
-    /* ====== INTEGRACIÓN CON API (Ideas) ====== */
-    function HOHO_getApiBase(){ return localStorage.getItem("HOHO3D_API_BASE") || ""; }
+    /* ====== API BASE (Vercel por defecto) ====== */
+    function HOHO_getApiBase(){
+      // En Vercel funciona out‑of‑the‑box: usa el mismo dominio del sitio
+      return localStorage.getItem("HOHO3D_API_BASE") || window.location.origin;
+    }
 
     function buildChatContextFromDOM() {
       const hexSel = (document.getElementById("sel-hex")?.textContent || "").trim();
@@ -395,9 +397,7 @@
       if (!btn || !out) return;
 
       btn.addEventListener("click", async () => {
-        const base = HOHO_getApiBase();
-        if (!base) { out.textContent = "⚠️ Configurá la API con la URL pública del puerto 8787 (localStorage HOHO3D_API_BASE)."; return; }
-
+        const base = HOHO_getApiBase(); // ← ahora usa Vercel por defecto
         const hex = (document.getElementById("sel-hex")?.textContent || "").trim() || "#00aaff";
         const ctx = buildChatContextFromDOM();
         const msg = `Quiero 2–3 ideas de impresión 3D que usen el color ${hex} y combinaciones sugeridas.`;
@@ -416,7 +416,7 @@
         }
       });
     })();
-    /* ====== /INTEGRACIÓN CON API (Ideas) ====== */
+    /* ====== /API BASE ====== */
 
   </script>
 </body>
