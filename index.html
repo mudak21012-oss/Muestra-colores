@@ -86,6 +86,15 @@
         <div class="actions">
           <a id="main-link" class="btn" href="#" target="_blank" rel="noopener">Abrir en tienda</a>
         </div>
+
+        <!-- Botón para ideas + salida -->
+        <div class="actions" style="margin-top:6px">
+          <button id="btn-ideas" class="btn" type="button">Pedir ideas con este color</button>
+        </div>
+        <div id="ideas-box" class="card" style="margin-top:10px">
+          <h2 style="margin:0 0 6px 0; font-size:16px;">Ideas</h2>
+          <pre id="ideas-out" style="white-space:pre-wrap; margin:0; font-size:14px; background:#0f1218; border:1px solid #1b1f28; border-radius:8px; padding:8px; min-height:48px">—</pre>
+        </div>
       </article>
 
       <article class="card">
@@ -247,7 +256,7 @@
       const setSub = (sub, item) => {
         const sw = document.getElementById(sub+'-sw');
         const nm = document.getElementById(sub+'-name');
-        theDesc = document.getElementById(sub+'-desc');
+        let theDesc = document.getElementById(sub+'-desc');
         const btn = document.getElementById(sub+'-btn');
         if (!item){ sw.style.background='transparent'; nm.textContent='—'; theDesc.textContent='—'; btn.onclick=null; return; }
         sw.style.background = item.hex; nm.textContent = item.name || 'Sin nombre';
@@ -352,6 +361,63 @@
     });
     inputQ.addEventListener('focus', ()=>{ if (inputQ.value) renderSugs(inputQ.value, pool); });
     document.addEventListener('click', (e)=>{ const sugs=document.getElementById('sugs'); if (!sugs.contains(e.target) && e.target!==inputQ) hideSugs(); });
+
+    /* ====== INTEGRACIÓN CON API (Ideas) ====== */
+    function HOHO_getApiBase(){ return localStorage.getItem("HOHO3D_API_BASE") || ""; }
+
+    function buildChatContextFromDOM() {
+      const hexSel = (document.getElementById("sel-hex")?.textContent || "").trim();
+      const rgbSel = (document.getElementById("sel-rgb")?.textContent || "").trim();
+
+      const main = {
+        name: document.getElementById("main-name")?.textContent || "",
+        hex:  document.getElementById("main-hex")?.textContent  || hexSel,
+        brand:document.getElementById("main-brand")?.textContent|| "",
+        type: document.getElementById("main-type")?.textContent || "",
+        style:document.getElementById("main-style")?.textContent|| ""
+      };
+      const alt1 = {
+        name: document.getElementById("sub1-name")?.textContent || "",
+        desc: document.getElementById("sub1-desc")?.textContent || "",
+        hex:  (document.getElementById("sub1-sw")?.style?.background || "").trim()
+      };
+      const alt2 = {
+        name: document.getElementById("sub2-name")?.textContent || "",
+        desc: document.getElementById("sub2-desc")?.textContent || "",
+        hex:  (document.getElementById("sub2-sw")?.style?.background || "").trim()
+      };
+      return { selected:{ hex: hexSel, rgb: rgbSel }, nearest:[main, alt1, alt2] };
+    }
+
+    (function initIdeasButton(){
+      const btn  = document.getElementById("btn-ideas");
+      const out  = document.getElementById("ideas-out");
+      if (!btn || !out) return;
+
+      btn.addEventListener("click", async () => {
+        const base = HOHO_getApiBase();
+        if (!base) { out.textContent = "⚠️ Configurá la API con la URL pública del puerto 8787 (localStorage HOHO3D_API_BASE)."; return; }
+
+        const hex = (document.getElementById("sel-hex")?.textContent || "").trim() || "#00aaff";
+        const ctx = buildChatContextFromDOM();
+        const msg = `Quiero 2–3 ideas de impresión 3D que usen el color ${hex} y combinaciones sugeridas.`;
+
+        out.textContent = "⏳ Generando ideas...";
+        try{
+          const resp = await fetch(`${base}/api/chat-json`, {
+            method: "POST",
+            headers: { "Content-Type":"application/json" },
+            body: JSON.stringify({ message: msg, context: ctx })
+          });
+          const data = await resp.json();
+          out.textContent = resp.ok ? (data.reply || "Sin respuesta.") : `❌ Error ${resp.status}\n${data.error || JSON.stringify(data)}`;
+        }catch(err){
+          out.textContent = `❌ Error de red: ${err.message}`;
+        }
+      });
+    })();
+    /* ====== /INTEGRACIÓN CON API (Ideas) ====== */
+
   </script>
 </body>
 </html>
