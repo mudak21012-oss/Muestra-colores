@@ -1,3 +1,4 @@
+// /api/chat-json.js – Vercel Serverless Function (sin Express)
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method Not Allowed" });
@@ -14,7 +15,7 @@ export default async function handler(req, res) {
     const apiKey = process.env.OPENAI_API_KEY;
     const project = process.env.OPENAI_PROJECT || "";
     if (!apiKey) {
-      res.status(500).json({ error: "OPENAI_API_KEY no configurada" });
+      res.status(500).json({ error: "OPENAI_API_KEY no configurada en Vercel" });
       return;
     }
 
@@ -22,6 +23,7 @@ export default async function handler(req, res) {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${apiKey}`
     };
+    // Para claves sk-proj-... se recomienda incluir el Project
     if (apiKey.startsWith("sk-proj") && project) {
       headers["OpenAI-Project"] = project;
     }
@@ -57,8 +59,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    const reply = j.output_text || "Sin respuesta.";
-    res.status(200).json({ reply });
+    res.status(200).json({ reply: j.output_text || "Sin respuesta." });
   } catch (e) {
     res.status(500).json({ error: e.message || "Error interno" });
   }
