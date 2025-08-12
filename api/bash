@@ -1,2 +1,2 @@
-mkdir api
-cd api
+npm init -y
+npm install express cors dotenv openai
