@@ -9,28 +9,16 @@
     *{ box-sizing:border-box }
     body{ margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Arial, "Noto Sans", sans-serif; color:var(--text); background:linear-gradient(120deg,#0b0c0f,#0f1218); }
 
-    /* Header fijo con toolbar y sugerencias pegadas al buscador */
     header{ padding:12px 20px; border-bottom:1px solid var(--line); position:sticky; top:0; background:#0b0c0fd9; backdrop-filter:saturate(140%) blur(6px); display:flex; gap:12px; align-items:center; z-index:10 }
     header h1{ margin:0; font-size:16px; font-weight:600; letter-spacing:.2px; white-space:nowrap }
-    .toolbar{ display:flex; gap:8px; margin-left:auto; position:relative; }
-    .select, .input{ appearance:none; border:1px solid #223047; background:#131824; color:#dbe6f7; border-radius:10px; padding:8px 12px; font-size:14px }
-    .input{ width:340px; }
-
-    /* Sugerencias debajo del buscador (dentro de la toolbar) */
-    .suggestions{ position:absolute; top:44px; right:0; width:340px; max-height:320px; overflow:auto; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:6px; display:none; z-index:15 }
-    .sug-item{ display:grid; grid-template-columns: 20px 1fr auto; gap:10px; align-items:center; padding:8px; border-radius:8px; cursor:pointer }
-    .sug-item:hover{ background:#0f1218 }
-    .sug-dot{ width:20px; height:20px; border-radius:6px; border:1px solid var(--line) }
-    .sug-meta{ color:var(--muted); font-size:12px }
-    .sug-empty{ color:var(--muted); font-size:13px; padding:8px; text-align:center }
 
     .app{ display:grid; grid-template-columns: 520px minmax(420px, 560px); gap:20px; padding:20px; max-width:1200px; margin:0 auto; align-items:start }
 
-    /* IZQUIERDA (más compacto) */
+    /* IZQUIERDA COMPACTA */
     .left{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; position:relative }
-    .pickers{ display:grid; grid-template-columns: 64px 1fr; gap:16px; align-items:center }
+    .pickers{ display:grid; grid-template-columns: 44px 1fr; gap:16px; align-items:center }
     .vbar-wrap{ display:flex; justify-content:center }
-    #vbar{ width:50px; height:300px; border-radius:12px; border:1px solid var(--line); cursor:ns-resize; display:block }
+    #vbar{ width:28px; height:300px; border-radius:10px; border:1px solid var(--line); cursor:ns-resize; display:block }
     #wheel{ width:320px; height:320px; display:block; margin:0 auto; border-radius:12px; border:1px solid var(--line); cursor:crosshair }
 
     .readout{ display:flex; gap:16px; align-items:center; margin:12px 2px 6px 2px; color:var(--muted) }
@@ -42,6 +30,16 @@
 
     /* DERECHA */
     .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px }
+    .filters{ position:relative; display:flex; gap:8px; align-items:center; margin-bottom:10px }
+    .select, .input{ appearance:none; border:1px solid #223047; background:#131824; color:#dbe6f7; border-radius:10px; padding:8px 12px; font-size:14px }
+    .input{ width:340px }
+    .suggestions{ position:absolute; top:44px; right:0; width:340px; max-height:320px; overflow:auto; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:6px; display:none; z-index:15 }
+    .sug-item{ display:grid; grid-template-columns: 20px 1fr auto; gap:10px; align-items:center; padding:8px; border-radius:8px; cursor:pointer }
+    .sug-item:hover{ background:#0f1218 }
+    .sug-dot{ width:20px; height:20px; border-radius:6px; border:1px solid var(--line) }
+    .sug-meta{ color:var(--muted); font-size:12px }
+    .sug-empty{ color:var(--muted); font-size:13px; padding:8px; text-align:center }
+
     .main-swatch{ width:100%; height:120px; border:1px solid var(--line); border-radius:12px; margin-bottom:10px }
     .meta{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; color:var(--muted); font-size:14px }
     .meta strong{ color:var(--text); font-weight:600 }
@@ -80,27 +78,14 @@
 <body>
   <header>
     <h1>Búsqueda por color</h1>
-    <div class="toolbar">
-      <select id="typeFilter" class="select" title="Filtrar por tipo">
-        <option value="*">Tipos de filamento ▾</option>
-        <option>PLA</option>
-        <option>PLA+</option>
-        <option>ABS</option>
-        <option>PETG</option>
-        <option>FLEX</option>
-        <option>PLAFLEX</option>
-      </select>
-      <input id="q" class="input" type="search" placeholder="Buscar por color, marca o #hex" autocomplete="off" />
-      <div id="sugs" class="suggestions" role="listbox" aria-label="Resultados"></div>
-    </div>
   </header>
 
   <main class="app">
-    <!-- IZQUIERDA -->
+    <!-- IZQUIERDA (rueda + barra FINITA) -->
     <section class="left">
       <div class="pickers">
         <div class="vbar-wrap">
-          <canvas id="vbar" width="50" height="300" aria-label="Luminosidad"></canvas>
+          <canvas id="vbar" width="28" height="300" aria-label="Luminosidad"></canvas>
         </div>
         <canvas id="wheel" width="320" height="320" aria-label="Rueda de color HSV"></canvas>
       </div>
@@ -112,15 +97,25 @@
       </div>
 
       <img id="preview-img" class="img-preview" alt="Vista previa del filamento" />
-
-      <div class="actions" style="margin-top:10px">
-        <label class="btn" for="refImage">Usa una imagen de referencia</label>
-        <input id="refImage" type="file" accept="image/*" />
-      </div>
     </section>
 
     <!-- DERECHA -->
     <section class="card" id="main-card" aria-live="polite">
+      <!-- FILTROS JUSTO ARRIBA DEL RECTÁNGULO -->
+      <div class="filters">
+        <select id="typeFilter" class="select" title="Filtrar por tipo">
+          <option value="*">Tipos de filamento ▾</option>
+          <option>PLA</option>
+          <option>PLA+</option>
+          <option>ABS</option>
+          <option>PETG</option>
+          <option>FLEX</option>
+          <option>PLAFLEX</option>
+        </select>
+        <input id="q" class="input" type="search" placeholder="Buscar por color, marca o #hex" autocomplete="off" />
+        <div id="sugs" class="suggestions" role="listbox" aria-label="Resultados"></div>
+      </div>
+
       <div class="main-swatch" id="main-sw"></div>
       <h2 id="main-name" style="margin:0 0 6px 0; font-size:20px">—</h2>
 
@@ -133,10 +128,12 @@
         <div><strong>HEX:</strong> <span id="main-hex">—</span></div>
       </div>
 
-      <!-- Acciones con CTA + Creador (orden pedido) -->
+      <!-- Acciones: CTA + Ideas + Imagen de referencia (al lado) -->
       <div class="actions">
         <a id="main-link" class="btn btn-cta" href="#" target="_blank" rel="noopener">¡Comprar ahora!</a>
         <button id="ideas-btn" class="btn" type="button">Creador de Ideas</button>
+        <label class="btn" for="refImage">Usa una imagen de referencia</label>
+        <input id="refImage" type="file" accept="image/*" />
       </div>
 
       <div id="ideas-box" class="card" style="margin-top:12px; display:none">
@@ -226,7 +223,7 @@
     const vbar  = document.getElementById('vbar');
     const vctx  = vbar.getContext('2d');
 
-    const CX = wheel.width/2, CY=wheel.height/2, R=150; // 320/2 - margen
+    const CX = wheel.width/2, CY=wheel.height/2, R=150;
     let H = 0.0, S = 1.0, V = 1.0;
     let draggingWheel = false;
     let draggingV = false;
@@ -374,15 +371,17 @@
         prev.onclick = ()=> openLightbox(a.img);
       } else { prev.removeAttribute('src'); prev.onclick=null; }
 
-      // Ideas on click
-      document.getElementById('ideas-list').innerHTML='';
-      document.getElementById('ideas-box').style.display='none';
-      document.getElementById('ideas-btn').onclick = ()=>{
-        const ul = document.getElementById('ideas-list'); ul.innerHTML='';
+      // Ideas toggle
+      const ideasBtn = document.getElementById('ideas-btn');
+      const ideasBox = document.getElementById('ideas-box');
+      const ul = document.getElementById('ideas-list');
+      ideasBox.style.display='none'; ul.innerHTML='';
+      ideasBtn.onclick = ()=>{
+        ul.innerHTML='';
         const ideas = (a.ideas||'').split(';').map(s=>s.trim()).filter(Boolean);
         if (!ideas.length){ ul.innerHTML='<li style="color:var(--muted)">Sin ideas cargadas</li>'; }
         else ideas.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; ul.appendChild(li); });
-        document.getElementById('ideas-box').style.display='block';
+        ideasBox.style.display='block';
       };
     }
     function renderSide(top){
@@ -408,7 +407,7 @@
       renderSide(ranked);
     }
 
-    /* ====== BUSCADOR + TIPO ====== */
+    /* ====== BUSCADOR + TIPO (dentro de la tarjeta) ====== */
     const inputQ = document.getElementById('q');
     const typeFilter = document.getElementById('typeFilter');
     const sugsBox = document.getElementById('sugs');
@@ -436,7 +435,7 @@
           );
         }
       }
-      renderSugs(list, q);
+      renderSugs(list);
       if (lastRGB) rankAndRenderBy(lastRGB);
     }
     function showSugs(){ sugsBox.style.display='block'; }
@@ -446,11 +445,8 @@
       const LIM=100;
       const out=list.slice(0,LIM);
       if (!out.length){
-        const empty = document.createElement('div');
-        empty.className='sug-empty';
-        empty.textContent = 'Sin existencias';
-        sugsBox.appendChild(empty);
-        showSugs(); return;
+        const empty=document.createElement('div'); empty.className='sug-empty'; empty.textContent='Sin existencias';
+        sugsBox.appendChild(empty); showSugs(); return;
       }
       out.forEach(it=>{
         const div=document.createElement('div'); div.className='sug-item';
@@ -488,7 +484,7 @@
       lastRGB = rgb; reflectSelection(rgb); rankAndRenderBy(rgb);
     });
 
-    /* ====== EYEDROPPER ====== */
+    /* ====== EYEDROPPER EN MODAL ====== */
     const eyeModal = document.getElementById('eyeModal');
     const eyeCanvas= document.getElementById('eyeCanvas');
     const ectx = eyeCanvas.getContext('2d', { willReadFrequently:true });
@@ -521,11 +517,14 @@
     });
 
     /* ====== INIT ====== */
-    drawWheel(); drawVBar();
+    function startDefault(){
+      H=0; S=1; V=1; drawWheel(); drawVBar();
+      const rgb = rgbFromHsv(H,S,V); lastRGB=rgb; reflectSelection(rgb);
+    }
+    startDefault();
     window.addEventListener('DOMContentLoaded', async ()=>{
       await cargar();
-      const rgb = rgbFromHsv(H,S,V);
-      lastRGB = rgb; reflectSelection(rgb); rankAndRenderBy(rgb);
+      rankAndRenderBy(lastRGB || rgbFromHsv(H,S,V));
     });
   </script>
 </body>
