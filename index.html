@@ -14,17 +14,21 @@
     .app{ display:grid; grid-template-columns: 440px minmax(380px,540px); gap:16px; padding:16px; max-width:1140px; margin:0 auto; align-items:start }
     .left,.right{ background:var(--card); border:1px solid #1b1f28; border-radius:12px; padding:12px }
 
-    /* === Picker orgánico (SV + H + inputs) === */
-    .picker{ display:grid; gap:10px }
-    .sv-wrap{ position:relative; width:400px; height:300px; margin:0 auto; }
-    #sv{ width:400px; height:300px; display:block; border-radius:10px; border:1px solid #1b1f28; cursor:crosshair; }
-    #sv-cursor{ position:absolute; width:14px; height:14px; border:2px solid #fff; border-radius:50%; transform:translate(-7px,-7px); pointer-events:none; box-shadow:0 0 0 1px #0008 }
-    .h-wrap{ position:relative; width:400px; height:18px; margin:0 auto; }
-    #hue{ width:400px; height:18px; display:block; border-radius:10px; border:1px solid #1b1f28; cursor:ew-resize; }
-    #hue-cursor{ position:absolute; top:50%; width:10px; height:20px; border:2px solid #fff; border-radius:4px; transform:translate(-5px,-50%); pointer-events:none; box-shadow:0 0 0 1px #0008 }
-    .inputs{ display:flex; gap:8px; align-items:center; justify-content:center }
+    /* === Picker circular (HSV wheel + slider V) === */
+    .picker{ display:grid; gap:10px; justify-items:center }
+    .wheel-wrap{ position:relative; width:360px; height:360px; }
+    #wheel{ width:360px; height:360px; display:block; border-radius:50%; border:1px solid #1b1f28; cursor:crosshair; background:#000; }
+    #wheel-cursor{ position:absolute; width:14px; height:14px; border:2px solid #fff; border-radius:50%; transform:translate(-7px,-7px); pointer-events:none; box-shadow:0 0 0 1px #0008 }
+    .v-wrap{ position:relative; width:360px; height:18px; }
+    #vbar{ width:360px; height:18px; display:block; border-radius:10px; border:1px solid #1b1f28; cursor:ew-resize; }
+    #v-cursor{ position:absolute; top:50%; width:10px; height:20px; border:2px solid #fff; border-radius:4px; transform:translate(-5px,-50%); pointer-events:none; box-shadow:0 0 0 1px #0008 }
+
+    .inputs{ display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap }
     .input{ padding:8px 10px; border-radius:10px; border:1px solid #223047; background:#131824; color:#dbe6f7; font-size:14px; width:110px }
     .input.small{ width:80px; text-align:center }
+    .btn{ appearance:none; border:1px solid #223047; background:#131824; color:#dbe6f7; padding:6px 10px; border-radius:10px; font-size:13px; cursor:pointer }
+    .btn[disabled]{ opacity:.5; cursor:not-allowed }
+    .btn:hover{ border-color:#2b3a55 }
 
     .current{ display:flex; gap:8px; align-items:center; font-size:13px; color:var(--muted); margin-top:4px; justify-content:center }
     .current .sw{ width:20px; height:20px; border-radius:6px; border:1px solid #1b1f28 }
@@ -57,8 +61,6 @@
     h2{ margin:2px 0 8px 0; font-size:20px }
     .meta{ display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:13px; color:var(--muted) }
     .meta strong{ color:var(--text) }
-    .btn{ appearance:none; border:1px solid #223047; background:#131824; color:#dbe6f7; padding:6px 10px; border-radius:10px; font-size:13px; cursor:pointer }
-    .btn:hover{ border-color:#2b3a55 }
     .actions{ display:flex; gap:8px; margin:8px 0 6px }
 
     .subs{ margin-top:8px; display:grid; gap:8px }
@@ -85,24 +87,25 @@
   <header><h1>Hoho3D · Búsqueda por color</h1></header>
 
   <main class="app">
-    <!-- IZQUIERDA: Picker + vista previa -->
+    <!-- IZQUIERDA: Picker circular + vista previa -->
     <section class="left">
       <div id="loading" style="color:var(--muted); font-size:13px">Cargando catálogo...</div>
 
       <div class="picker">
-        <div class="sv-wrap">
-          <canvas id="sv" width="400" height="300" aria-label="Cuadro Saturación/Valor"></canvas>
-          <div id="sv-cursor"></div>
+        <div class="wheel-wrap">
+          <canvas id="wheel" width="360" height="360" aria-label="Rueda HSV"></canvas>
+          <div id="wheel-cursor"></div>
         </div>
-        <div class="h-wrap">
-          <canvas id="hue" width="400" height="18" aria-label="Barra de Tono"></canvas>
-          <div id="hue-cursor"></div>
+        <div class="v-wrap">
+          <canvas id="vbar" width="360" height="18" aria-label="Slider de Valor (V)"></canvas>
+          <div id="v-cursor"></div>
         </div>
         <div class="inputs">
           <input id="hex" class="input" placeholder="#rrggbb" />
           <input id="r" class="input small" placeholder="R" inputmode="numeric" />
           <input id="g" class="input small" placeholder="G" inputmode="numeric" />
           <input id="b" class="input small" placeholder="B" inputmode="numeric" />
+          <button id="eyedrop" class="btn" type="button" title="Cuentagotas del sistema">🎯 Cuentagotas</button>
         </div>
       </div>
 
@@ -221,7 +224,7 @@
     }
 
     /* ====== Filtro por tipo ====== */
-    const TYPES=["Todos","PLA","PLA+","ABS","PETG","FLEX","PLAFLEX"]; // ← agregar aquí más
+    const TYPES=["Todos","PLA","PLA+","ABS","PETG","FLEX","PLAFLEX"]; // ← agrega aquí más si necesitás
     let selectedType="Todos";
     function normalizeType(s){ return (s||"").toString().trim().toUpperCase(); }
     function matchesType(item){ if(selectedType==="Todos") return true; return normalizeType(item.type)===normalizeType(selectedType); }
@@ -364,7 +367,6 @@
       renderSugs(pool);
     }
     inputQ.addEventListener('input', e=>{
-      // cerrar menú de tipos al tipear
       const menu=document.getElementById("type-menu"); const btn=document.getElementById("type-filter-btn");
       menu.classList.remove("open"); btn.setAttribute("aria-expanded","false");
       applySearch(e.target.value);
@@ -372,94 +374,117 @@
     inputQ.addEventListener('focus', ()=>{ if(inputQ.value) applySearch(inputQ.value) });
     document.addEventListener('click', e=>{ if(!sugsBox.contains(e.target) && e.target!==inputQ) hideSugs(); });
 
-    /* ====== Picker (SV + Hue + inputs) ====== */
-    const sv = document.getElementById('sv');
-    const svCtx = sv.getContext('2d');
-    const hueBar = document.getElementById('hue');
-    const hueCtx = hueBar.getContext('2d');
-    const svCursor = document.getElementById('sv-cursor');
-    const hueCursor = document.getElementById('hue-cursor');
+    /* ====== Picker circular ====== */
+    const wheel = document.getElementById('wheel');
+    const wctx = wheel.getContext('2d', { willReadFrequently:true });
+    const wheelCursor = document.getElementById('wheel-cursor');
+
+    const vbar = document.getElementById('vbar');
+    const vctx = vbar.getContext('2d');
+    const vCursor = document.getElementById('v-cursor');
+
     const hexInput = document.getElementById('hex');
     const rInput = document.getElementById('r');
     const gInput = document.getElementById('g');
     const bInput = document.getElementById('b');
+    const eyedrop = document.getElementById('eyedrop');
 
-    let H=0, S=1, V=1; // estado HSV del picker
-    function paintHueBar(){
-      const w=hueBar.width, h=hueBar.height;
-      const grad=hueCtx.createLinearGradient(0,0,w,0);
-      for(let i=0;i<=360;i+=10){ const {r,g,b}=rgbFromHsv(i/360,1,1); grad.addColorStop(i/360, `rgb(${r},${g},${b})`); }
-      hueCtx.fillStyle=grad; hueCtx.fillRect(0,0,w,h);
+    const CX = wheel.width/2, CY = wheel.height/2, R = wheel.width/2 - 2;
+    let H=0, S=1, V=1;
+    let draggingWheel=false, draggingV=false;
+
+    function drawWheel(){
+      const img = wctx.createImageData(wheel.width, wheel.height);
+      for(let y=0; y<wheel.height; y++){
+        for(let x=0; x<wheel.width; x++){
+          const dx = x - CX, dy = y - CY;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist <= R){
+            let angle = Math.atan2(dy, dx);
+            if (angle < 0) angle += Math.PI*2;
+            const hue = angle / (Math.PI*2);
+            const sat = dist / R;
+            const {r,g,b} = rgbFromHsv(hue, sat, 1); // dibujamos con V=1
+            const idx = (y*wheel.width + x) * 4;
+            img.data[idx] = r;
+            img.data[idx+1] = g;
+            img.data[idx+2] = b;
+            img.data[idx+3] = 255;
+          }
+        }
+      }
+      wctx.putImageData(img,0,0);
     }
-    function paintSV(){
-      const w=sv.width, h=sv.height;
-      // capa: de blanco a color puro (horizontal)
-      const {r:hr,g:hg,b:hb}=rgbFromHsv(H,1,1);
-      const gradX=svCtx.createLinearGradient(0,0,w,0);
-      gradX.addColorStop(0, 'rgb(255,255,255)');
-      gradX.addColorStop(1, `rgb(${hr},${hg},${hb})`);
-      svCtx.fillStyle=gradX; svCtx.fillRect(0,0,w,h);
-      // capa: de transparente a negro (vertical)
-      const gradY=svCtx.createLinearGradient(0,0,0,h);
-      gradY.addColorStop(0, 'rgba(0,0,0,0)');
-      gradY.addColorStop(1, 'rgba(0,0,0,1)');
-      svCtx.fillStyle=gradY; svCtx.fillRect(0,0,w,h);
+    function drawVbar(){
+      const w=vbar.width, h=vbar.height;
+      const grad=vctx.createLinearGradient(0,0,w,0);
+      grad.addColorStop(0, 'black');
+      grad.addColorStop(1, 'white');
+      vctx.fillStyle=grad; vctx.fillRect(0,0,w,h);
     }
-    function updateCursors(){
-      // hue
-      const xH = H * hueBar.width;
-      hueCursor.style.left = `${xH}px`;
-      // sv
-      const xS = S * sv.width;
-      const yV = (1 - V) * sv.height;
-      svCursor.style.left = `${xS}px`; svCursor.style.top = `${yV}px`;
+    function updateCursorsFromHSV(){
+      const angle = H * Math.PI*2;
+      const r = S * R;
+      const x = CX + r * Math.cos(angle);
+      const y = CY + r * Math.sin(angle);
+      wheelCursor.style.left = x + 'px';
+      wheelCursor.style.top  = y + 'px';
+
+      const xv = V * vbar.width;
+      vCursor.style.left = xv + 'px';
     }
-    function emitColor(){
-      const {r,g,b}=rgbFromHsv(H,S,V);
-      const hex=rgbToHex(r,g,b);
-      lastRGB={r,g,b};
-      document.getElementById('sel-rgb').textContent=`${r}, ${g}, ${b}`;
-      document.getElementById('sel-hex').textContent=hex;
-      document.getElementById('sel-sw').style.background=hex;
-      if(hexInput.value.toLowerCase()!==hex) hexInput.value=hex;
-      if(+rInput.value!==r) rInput.value=r;
-      if(+gInput.value!==g) gInput.value=g;
-      if(+bInput.value!==b) bInput.value=b;
+    function emitColorFromHSV(){
+      const {r,g,b} = rgbFromHsv(H,S,V);
+      const hex = rgbToHex(r,g,b);
+      lastRGB = {r,g,b};
+      document.getElementById('sel-rgb').textContent = `${r}, ${g}, ${b}`;
+      document.getElementById('sel-hex').textContent = hex;
+      document.getElementById('sel-sw').style.background = hex;
+      if (hexInput.value.toLowerCase()!==hex) hexInput.value = hex;
+      if (+rInput.value!==r) rInput.value = r;
+      if (+gInput.value!==g) gInput.value = g;
+      if (+bInput.value!==b) bInput.value = b;
       rankAndRenderBy({r,g,b});
     }
-    function pickSV(clientX, clientY){
-      const rect=sv.getBoundingClientRect();
-      const x=clamp((clientX-rect.left)*(sv.width/rect.width),0,sv.width);
-      const y=clamp((clientY-rect.top)*(sv.height/rect.height),0,sv.height);
-      S = x / sv.width;
-      V = 1 - (y / sv.height);
-      updateCursors(); emitColor();
+    function pickWheel(clientX, clientY){
+      const rect = wheel.getBoundingClientRect();
+      const scaleX = wheel.width / rect.width;
+      const scaleY = wheel.height / rect.height;
+      const x = (clientX - rect.left) * scaleX;
+      const y = (clientY - rect.top) * scaleY;
+      const dx = x - CX, dy = y - CY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist>R) return;
+      let angle = Math.atan2(dy, dx);
+      if (angle < 0) angle += Math.PI*2;
+      H = angle / (Math.PI*2);
+      S = dist / R;
+      updateCursorsFromHSV();
+      emitColorFromHSV();
     }
-    function pickHue(clientX){
-      const rect=hueBar.getBoundingClientRect();
-      const x=clamp((clientX-rect.left)*(hueBar.width/rect.width),0,hueBar.width);
-      H = x / hueBar.width;
-      paintSV();
-      updateCursors(); emitColor();
+    function pickV(clientX){
+      const rect = vbar.getBoundingClientRect();
+      const x = clamp((clientX - rect.left) * (vbar.width/rect.width), 0, vbar.width);
+      V = x / vbar.width;
+      updateCursorsFromHSV();
+      emitColorFromHSV();
     }
 
-    // eventos SV
-    let draggingSV=false, draggingH=false;
-    sv.addEventListener('mousedown',e=>{ draggingSV=true; pickSV(e.clientX,e.clientY); });
-    window.addEventListener('mousemove',e=>{ if(draggingSV) pickSV(e.clientX,e.clientY); if(draggingH) pickHue(e.clientX); });
-    window.addEventListener('mouseup',()=>{ draggingSV=false; draggingH=false; });
-    sv.addEventListener('touchstart',e=>{ const p=e.touches[0]; draggingSV=true; pickSV(p.clientX,p.clientY); },{passive:false});
-    window.addEventListener('touchmove',e=>{ if(draggingSV){ const p=e.touches[0]; pickSV(p.clientX,p.clientY); } if(draggingH){ const p=e.touches[0]; pickHue(p.clientX); } },{passive:false});
-    window.addEventListener('touchend',()=>{ draggingSV=false; draggingH=false; });
-    // eventos Hue
-    hueBar.addEventListener('mousedown',e=>{ draggingH=true; pickHue(e.clientX); });
-    hueBar.addEventListener('touchstart',e=>{ const p=e.touches[0]; draggingH=true; pickHue(p.clientX); },{passive:false});
+    wheel.addEventListener('mousedown', e=>{ draggingWheel=true; pickWheel(e.clientX,e.clientY); });
+    window.addEventListener('mousemove', e=>{ if(draggingWheel) pickWheel(e.clientX,e.clientY); if(draggingV) pickV(e.clientX); });
+    window.addEventListener('mouseup', ()=>{ draggingWheel=false; draggingV=false; });
+    wheel.addEventListener('touchstart', e=>{ const p=e.touches[0]; draggingWheel=true; pickWheel(p.clientX,p.clientY); }, {passive:false});
+    window.addEventListener('touchmove', e=>{ if(draggingWheel){ const p=e.touches[0]; pickWheel(p.clientX,p.clientY); } if(draggingV){ const p=e.touches[0]; pickV(p.clientX); } }, {passive:false});
+    window.addEventListener('touchend', ()=>{ draggingWheel=false; draggingV=false; });
 
-    // inputs manuales (HEX/RGB)
+    vbar.addEventListener('mousedown', e=>{ draggingV=true; pickV(e.clientX); });
+    vbar.addEventListener('touchstart', e=>{ const p=e.touches[0]; draggingV=true; pickV(p.clientX); }, {passive:false});
+
+    // inputs manuales
     function setFromHexInput(){
       const hx=normalizeHex(hexInput.value||''); if(!hx) return;
       const {r,g,b}=hexToRgb(hx); const hsv=hsvFromRgb(r,g,b);
-      H=hsv.h; S=hsv.s; V=hsv.v; paintSV(); updateCursors(); emitColor();
+      H=hsv.h; S=hsv.s; V=hsv.v; updateCursorsFromHSV(); emitColorFromHSV();
     }
     hexInput.addEventListener('input', setFromHexInput);
     function setFromRgbInputs(){
@@ -467,21 +492,39 @@
       let g=clamp(parseInt(gInput.value||0,10),0,255);
       let b=clamp(parseInt(bInput.value||0,10),0,255);
       const hsv=hsvFromRgb(r,g,b);
-      H=hsv.h; S=hsv.s; V=hsv.v; paintSV(); updateCursors(); emitColor();
+      H=hsv.h; S=hsv.s; V=hsv.v; updateCursorsFromHSV(); emitColorFromHSV();
     }
     [rInput,gInput,bInput].forEach(el=>el.addEventListener('input', setFromRgbInputs));
 
+    // cuentagotas (EyeDropper API)
+    if (!('EyeDropper' in window)) {
+      eyedrop.disabled = true;
+      eyedrop.title = "Cuentagotas no soportado por este navegador";
+    }
+    eyedrop.addEventListener('click', async ()=>{
+      if(!('EyeDropper' in window)) return;
+      try{
+        const ed=new window.EyeDropper();
+        const res=await ed.open();
+        if(res?.sRGBHex){
+          hexInput.value=res.sRGBHex;
+          setFromHexInput();
+        }
+      }catch(e){ /* cancelado */ }
+    });
+
     /* ====== Inicio ====== */
+    const lbClose=document.getElementById('lb-close');
     async function init(){
-      // reset inicial (como pediste)
+      // reset
       selectedType="Todos"; document.getElementById('type-filter-btn').textContent="Tipo: Todos ▾";
       document.getElementById('q').value=""; document.getElementById('ideas-box').style.display='none';
 
       buildTypeMenu();
       await cargar();
 
-      paintHueBar(); paintSV();
-      H=0; S=1; V=1; updateCursors(); emitColor(); // rojo puro de arranque
+      drawWheel(); drawVbar();
+      H=0; S=1; V=1; updateCursorsFromHSV(); emitColorFromHSV(); // rojo puro
 
       document.getElementById('ideas-show').addEventListener('click', ()=>{ if(currentItem) renderIdeasList(currentItem); });
       document.getElementById('ideas-refresh').addEventListener('click', ()=>{ if(currentItem) renderIdeasList(currentItem); });
