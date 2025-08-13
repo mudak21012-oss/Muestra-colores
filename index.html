@@ -8,24 +8,37 @@
     :root{ --bg:#0b0c0f; --card:#111317; --muted:#9aa1ac; --text:#e8ecf1; --accent:#3b82f6; --line:#1b1f28; }
     *{ box-sizing:border-box }
     body{ margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Arial, "Noto Sans", sans-serif; color:var(--text); background:linear-gradient(120deg,#0b0c0f,#0f1218); }
+
+    /* Header fijo con toolbar y sugerencias pegadas al buscador */
     header{ padding:12px 20px; border-bottom:1px solid var(--line); position:sticky; top:0; background:#0b0c0fd9; backdrop-filter:saturate(140%) blur(6px); display:flex; gap:12px; align-items:center; z-index:10 }
     header h1{ margin:0; font-size:16px; font-weight:600; letter-spacing:.2px; white-space:nowrap }
-    .toolbar{ display:flex; gap:8px; margin-left:auto }
+    .toolbar{ display:flex; gap:8px; margin-left:auto; position:relative; }
     .select, .input{ appearance:none; border:1px solid #223047; background:#131824; color:#dbe6f7; border-radius:10px; padding:8px 12px; font-size:14px }
     .input{ width:340px; }
-    .app{ display:grid; grid-template-columns: 560px minmax(420px, 560px); gap:20px; padding:20px; max-width:1200px; margin:0 auto; align-items:start }
 
-    /* IZQUIERDA */
+    /* Sugerencias debajo del buscador (dentro de la toolbar) */
+    .suggestions{ position:absolute; top:44px; right:0; width:340px; max-height:320px; overflow:auto; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:6px; display:none; z-index:15 }
+    .sug-item{ display:grid; grid-template-columns: 20px 1fr auto; gap:10px; align-items:center; padding:8px; border-radius:8px; cursor:pointer }
+    .sug-item:hover{ background:#0f1218 }
+    .sug-dot{ width:20px; height:20px; border-radius:6px; border:1px solid var(--line) }
+    .sug-meta{ color:var(--muted); font-size:12px }
+    .sug-empty{ color:var(--muted); font-size:13px; padding:8px; text-align:center }
+
+    .app{ display:grid; grid-template-columns: 520px minmax(420px, 560px); gap:20px; padding:20px; max-width:1200px; margin:0 auto; align-items:start }
+
+    /* IZQUIERDA (más compacto) */
     .left{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; position:relative }
-    .pickers{ display:grid; grid-template-columns: 76px 1fr; gap:18px; align-items:center }
+    .pickers{ display:grid; grid-template-columns: 64px 1fr; gap:16px; align-items:center }
     .vbar-wrap{ display:flex; justify-content:center }
-    #vbar{ width:56px; height:340px; border-radius:12px; border:1px solid var(--line); cursor:ns-resize; display:block }
-    #wheel{ width:360px; height:360px; display:block; margin:0 auto; border-radius:12px; border:1px solid var(--line); cursor:crosshair }
+    #vbar{ width:50px; height:300px; border-radius:12px; border:1px solid var(--line); cursor:ns-resize; display:block }
+    #wheel{ width:320px; height:320px; display:block; margin:0 auto; border-radius:12px; border:1px solid var(--line); cursor:crosshair }
+
     .readout{ display:flex; gap:16px; align-items:center; margin:12px 2px 6px 2px; color:var(--muted) }
     .dot{ width:10px; height:10px; border-radius:50%; background:#e53935; box-shadow:0 0 0 2px #2a2f3b inset }
     .tag{ display:inline-flex; gap:8px; align-items:center }
     .chip{ background:#141a25; border:1px solid var(--line); padding:8px 10px; border-radius:10px; color:#dbe6f7; font-size:14px; min-width:140px }
-    .img-preview{ width:100%; height:220px; border:1px solid var(--line); border-radius:12px; object-fit:cover; display:block; margin-top:10px }
+
+    .img-preview{ width:100%; height:260px; border:1px solid var(--line); border-radius:12px; object-fit:cover; display:block; margin-top:10px }
 
     /* DERECHA */
     .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px }
@@ -45,15 +58,7 @@
     .sub small{ color:var(--muted) }
     .btn-mini{ padding:6px 10px; font-size:13px }
 
-    /* Sugerencias de búsqueda */
-    .suggestions{ position:absolute; top:46px; right:20px; width:340px; max-height:320px; overflow:auto; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:6px; display:none; z-index:15 }
-    .sug-item{ display:grid; grid-template-columns: 20px 1fr auto; gap:10px; align-items:center; padding:8px; border-radius:8px; cursor:pointer }
-    .sug-item:hover{ background:#0f1218 }
-    .sug-dot{ width:20px; height:20px; border-radius:6px; border:1px solid var(--line) }
-    .sug-meta{ color:var(--muted); font-size:12px }
-    .sug-empty{ color:var(--muted); font-size:13px; padding:8px; text-align:center }
-
-    /* Lightbox de producto (zoom/fade suave) */
+    /* Lightbox producto */
     .lightbox{ position:fixed; inset:0; background:rgba(0,0,0,.82); display:none; align-items:center; justify-content:center; z-index:9999; opacity:0; transition:opacity .18s ease }
     .lightbox.show{ display:flex; opacity:1 }
     .lightbox img{ max-width:min(92vw,1200px); max-height:90vh; display:block; transform:scale(.98); transition:transform .18s ease }
@@ -69,13 +74,12 @@
     #eyeCanvas{ width:100%; height:520px; border:1px solid var(--line); border-radius:10px; display:block; cursor:crosshair }
     .pill{ background:#141a25; border:1px solid var(--line); padding:6px 10px; border-radius:8px; font-size:13px; color:#dbe6f7 }
 
-    /* Inputs invisibles */
     input[type="file"]{ display:none }
   </style>
 </head>
 <body>
   <header>
-    <h1>Hoho3D · Búsqueda por color</h1>
+    <h1>Búsqueda por color</h1>
     <div class="toolbar">
       <select id="typeFilter" class="select" title="Filtrar por tipo">
         <option value="*">Tipos de filamento ▾</option>
@@ -87,6 +91,7 @@
         <option>PLAFLEX</option>
       </select>
       <input id="q" class="input" type="search" placeholder="Buscar por color, marca o #hex" autocomplete="off" />
+      <div id="sugs" class="suggestions" role="listbox" aria-label="Resultados"></div>
     </div>
   </header>
 
@@ -95,9 +100,9 @@
     <section class="left">
       <div class="pickers">
         <div class="vbar-wrap">
-          <canvas id="vbar" width="56" height="340" aria-label="Luminosidad"></canvas>
+          <canvas id="vbar" width="50" height="300" aria-label="Luminosidad"></canvas>
         </div>
-        <canvas id="wheel" width="360" height="360" aria-label="Rueda de color HSV"></canvas>
+        <canvas id="wheel" width="320" height="320" aria-label="Rueda de color HSV"></canvas>
       </div>
 
       <div class="readout">
@@ -108,7 +113,6 @@
 
       <img id="preview-img" class="img-preview" alt="Vista previa del filamento" />
 
-      <!-- input file + botón para abrir modal eyedropper -->
       <div class="actions" style="margin-top:10px">
         <label class="btn" for="refImage">Usa una imagen de referencia</label>
         <input id="refImage" type="file" accept="image/*" />
@@ -116,9 +120,7 @@
     </section>
 
     <!-- DERECHA -->
-    <section class="card" id="main-card" aria-live="polite" style="position:relative">
-      <div id="sugs" class="suggestions" role="listbox" aria-label="Resultados"></div>
-
+    <section class="card" id="main-card" aria-live="polite">
       <div class="main-swatch" id="main-sw"></div>
       <h2 id="main-name" style="margin:0 0 6px 0; font-size:20px">—</h2>
 
@@ -131,6 +133,7 @@
         <div><strong>HEX:</strong> <span id="main-hex">—</span></div>
       </div>
 
+      <!-- Acciones con CTA + Creador (orden pedido) -->
       <div class="actions">
         <a id="main-link" class="btn btn-cta" href="#" target="_blank" rel="noopener">¡Comprar ahora!</a>
         <button id="ideas-btn" class="btn" type="button">Creador de Ideas</button>
@@ -165,13 +168,13 @@
     </section>
   </main>
 
-  <!-- Lightbox para imágenes de filamentos -->
+  <!-- Lightbox producto -->
   <div class="lightbox" id="lightbox">
     <button class="close" id="lb-close">Cerrar</button>
     <img id="lb-img" alt="Imagen del filamento" />
   </div>
 
-  <!-- Modal Eyedropper de imagen de referencia -->
+  <!-- Modal eyedropper -->
   <div class="modal" id="eyeModal">
     <div class="modal-card">
       <div class="modal-head">
@@ -223,14 +226,14 @@
     const vbar  = document.getElementById('vbar');
     const vctx  = vbar.getContext('2d');
 
-    const CX = wheel.width/2, CY=wheel.height/2, R=170;
-    let H = 0.0, S = 1.0, V = 1.0; // HSV actuales
+    const CX = wheel.width/2, CY=wheel.height/2, R=150; // 320/2 - margen
+    let H = 0.0, S = 1.0, V = 1.0;
     let draggingWheel = false;
     let draggingV = false;
 
-    let items = [];     // catálogo cargado
-    let pool  = [];     // pool filtrado por tipo/búsqueda
-    let lastRGB = null; // color seleccionado
+    let items = [];
+    let pool  = [];
+    let lastRGB = null;
 
     /* ====== DRAWERS ====== */
     function drawWheel(){
@@ -241,7 +244,7 @@
           if (dist<=R){
             let ang=Math.atan2(dy,dx); if(ang<0) ang+=Math.PI*2;
             const hue=ang/(Math.PI*2), sat=dist/R;
-            const {r,g,b} = rgbFromHsv(hue, sat, V); // el disco respeta V actual
+            const {r,g,b} = rgbFromHsv(hue, sat, V);
             const i=(y*wheel.width + x)*4; img.data[i]=r; img.data[i+1]=g; img.data[i+2]=b; img.data[i+3]=255;
           }
         }
@@ -249,18 +252,18 @@
       wctx.putImageData(img,0,0);
     }
     function drawVBar(){
+      const cTop = rgbFromHsv(H,S,1);
       const grd = vctx.createLinearGradient(0,0,0,vbar.height);
-      grd.addColorStop(0, `rgb(${rgbFromHsv(H,S,1).r},${rgbFromHsv(H,S,1).g},${rgbFromHsv(H,S,1).b})`);
+      grd.addColorStop(0, `rgb(${cTop.r},${cTop.g},${cTop.b})`);
       grd.addColorStop(1, `rgb(0,0,0)`);
       vctx.fillStyle=grd;
       vctx.fillRect(0,0,vbar.width,vbar.height);
-      // marcador
       const y=(1-V)*vbar.height;
       vctx.fillStyle="#ffffff";
       vctx.fillRect(0, y-1, vbar.width, 2);
     }
 
-    /* ====== IO (WHEEL + VBAR) ====== */
+    /* ====== IO ====== */
     function updateFromWheel(clientX, clientY){
       const r = wheel.getBoundingClientRect();
       const sx = wheel.width / r.width, sy = wheel.height / r.height;
@@ -269,7 +272,6 @@
       if (dist>R) return;
       let ang=Math.atan2(dy,dx); if(ang<0) ang+=Math.PI*2;
       H = ang/(Math.PI*2); S = dist/R;
-      const {r:r8,g:b8,b:g8} = rgbFromHsv(H,S,V); // (nombres cruzados no: ya corregido)
       const rgb = rgbFromHsv(H,S,V);
       lastRGB = rgb;
       reflectSelection(rgb);
@@ -296,7 +298,7 @@
     window.addEventListener('mousemove', e=>{ if(draggingV) updateFromVBar(e.clientY); });
     window.addEventListener('mouseup', ()=> draggingV=false);
 
-    /* ====== CARGA DE CATÁLOGO ====== */
+    /* ====== CARGA CATÁLOGO ====== */
     async function cargar(){
       const imgPrev = document.getElementById('preview-img');
       try{
@@ -342,20 +344,16 @@
         });
         pool = items.slice();
 
-        // set preview inicial
         if (items[0]?.img){ imgPrev.src = items[0].img; imgPrev.alt = `Vista previa ${items[0].name}`; }
-      }catch(e){
-        console.error(e);
-      }
+      }catch(e){ console.error(e); }
     }
 
-    /* ====== RENDERIZADOS ====== */
+    /* ====== RENDERS ====== */
     function reflectSelection(rgb){
       const hex = rgbToHex(rgb.r,rgb.g,rgb.b);
       document.getElementById('dot').style.background = hex;
       document.getElementById('sel-rgb').textContent = `${rgb.r}, ${rgb.g}, ${rgb.b}`;
-      const selHex = document.getElementById('sel-hex');
-      selHex.value = hex;
+      document.getElementById('sel-hex').value = hex;
     }
     function renderMainCard(a){
       if(!a) return;
@@ -374,17 +372,13 @@
         prev.src = a.img; prev.alt=`Vista previa ${a.name}`;
         prev.onerror = ()=>{ prev.removeAttribute('src'); };
         prev.onclick = ()=> openLightbox(a.img);
-      } else {
-        prev.removeAttribute('src');
-        prev.onclick = null;
-      }
+      } else { prev.removeAttribute('src'); prev.onclick=null; }
 
-      // Ideas: se limpian para esperar click del botón
+      // Ideas on click
       document.getElementById('ideas-list').innerHTML='';
       document.getElementById('ideas-box').style.display='none';
       document.getElementById('ideas-btn').onclick = ()=>{
-        const ul = document.getElementById('ideas-list');
-        ul.innerHTML='';
+        const ul = document.getElementById('ideas-list'); ul.innerHTML='';
         const ideas = (a.ideas||'').split(';').map(s=>s.trim()).filter(Boolean);
         if (!ideas.length){ ul.innerHTML='<li style="color:var(--muted)">Sin ideas cargadas</li>'; }
         else ideas.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; ul.appendChild(li); });
@@ -414,7 +408,7 @@
       renderSide(ranked);
     }
 
-    /* ====== BUSCADOR + FILTRO TIPO ====== */
+    /* ====== BUSCADOR + TIPO ====== */
     const inputQ = document.getElementById('q');
     const typeFilter = document.getElementById('typeFilter');
     const sugsBox = document.getElementById('sugs');
@@ -447,7 +441,7 @@
     }
     function showSugs(){ sugsBox.style.display='block'; }
     function hideSugs(){ sugsBox.style.display='none'; sugsBox.innerHTML=''; }
-    function renderSugs(list, q){
+    function renderSugs(list){
       sugsBox.innerHTML='';
       const LIM=100;
       const out=list.slice(0,LIM);
@@ -478,39 +472,27 @@
     document.addEventListener('click', e=>{ if(!sugsBox.contains(e.target) && e.target!==inputQ) hideSugs(); });
     typeFilter.addEventListener('change', ()=> applySearchAndSuggest(inputQ.value));
 
-    /* ====== LIGHTBOX PRODUCTO ====== */
+    /* ====== LIGHTBOX ====== */
     const lb = document.getElementById('lightbox');
-    function openLightbox(src){
-      const img=document.getElementById('lb-img');
-      img.src=src; lb.classList.add('show');
-    }
-    function closeLightbox(){
-      lb.classList.remove('show');
-      const img=document.getElementById('lb-img');
-      img.removeAttribute('src');
-    }
+    function openLightbox(src){ const img=document.getElementById('lb-img'); img.src=src; lb.classList.add('show'); }
+    function closeLightbox(){ lb.classList.remove('show'); const img=document.getElementById('lb-img'); img.removeAttribute('src'); }
     document.getElementById('lb-close').addEventListener('click', closeLightbox);
     lb.addEventListener('click', e=>{ if(e.target.id==='lightbox') closeLightbox(); });
     window.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeLightbox(); closeEye(); } });
 
-    /* ====== INPUT HEX EDITABLE ====== */
+    /* ====== HEX EDITABLE ====== */
     document.getElementById('sel-hex').addEventListener('change', e=>{
       const hx = normalizeHex(e.target.value);
       if (!hx) return;
       const rgb = hexToRgb(hx);
-      // Recalcular HSV aproximado desde rgb (simple aproximación con barrido de rueda)
-      // Para mantener corto, solo actualizamos la UI y ranking.
-      lastRGB = rgb;
-      reflectSelection(rgb);
-      rankAndRenderBy(rgb);
+      lastRGB = rgb; reflectSelection(rgb); rankAndRenderBy(rgb);
     });
 
-    /* ====== EYE DROPPER EN MODAL ====== */
+    /* ====== EYEDROPPER ====== */
     const eyeModal = document.getElementById('eyeModal');
     const eyeCanvas= document.getElementById('eyeCanvas');
     const ectx = eyeCanvas.getContext('2d', { willReadFrequently:true });
     function openEye(img){
-      // Ajustar imagen centrada
       ectx.clearRect(0,0,eyeCanvas.width,eyeCanvas.height);
       const iw = img.naturalWidth, ih = img.naturalHeight;
       const cw = eyeCanvas.width, ch=eyeCanvas.height;
@@ -521,27 +503,20 @@
       eyeModal.classList.add('show');
     }
     function closeEye(){ eyeModal.classList.remove('show'); }
-
     eyeCanvas.addEventListener('click', e=>{
       const r = eyeCanvas.getBoundingClientRect();
       const x = Math.floor((e.clientX - r.left) * (eyeCanvas.width / r.width));
       const y = Math.floor((e.clientY - r.top)  * (eyeCanvas.height/ r.height));
       const px = ectx.getImageData(x,y,1,1).data;
       const rgb = { r:px[0], g:px[1], b:px[2] };
-      lastRGB = rgb;
-      reflectSelection(rgb);
-      rankAndRenderBy(rgb);
-      closeEye();
+      lastRGB = rgb; reflectSelection(rgb); rankAndRenderBy(rgb); closeEye();
     });
     document.getElementById('eye-close').addEventListener('click', closeEye);
-
-    // Carga archivo y abre modal
     document.getElementById('refImage').addEventListener('change', e=>{
       const f = e.target.files?.[0]; if(!f) return;
       const img = new Image();
       img.onload = ()=> openEye(img);
       img.src = URL.createObjectURL(f);
-      // reset input para permitir re-subir misma imagen si quiere
       e.target.value = '';
     });
 
@@ -549,10 +524,8 @@
     drawWheel(); drawVBar();
     window.addEventListener('DOMContentLoaded', async ()=>{
       await cargar();
-      // Selección inicial: usa HSV 0,1,1
       const rgb = rgbFromHsv(H,S,V);
-      lastRGB = rgb; reflectSelection(rgb);
-      rankAndRenderBy(rgb);
+      lastRGB = rgb; reflectSelection(rgb); rankAndRenderBy(rgb);
     });
   </script>
 </body>
