@@ -14,22 +14,37 @@
     .app{ display:grid; grid-template-columns: 380px minmax(360px,520px); gap:14px; padding:14px; max-width:1100px; margin:0 auto; align-items:start }
     .left,.right{ background:var(--card); border:1px solid #1b1f28; border-radius:12px; padding:12px }
 
-    /* Izquierda compacta */
+    /* Izquierda */
     #wheel{ width:340px; height:340px; display:block; margin:6px auto 8px; border-radius:10px; border:1px solid #1b1f28; cursor:crosshair }
     .current{ display:flex; gap:8px; align-items:center; font-size:13px; color:var(--muted); margin-top:4px }
     .current .sw{ width:18px; height:18px; border-radius:5px; border:1px solid #1b1f28 }
     .preview-img{ width:100%; max-width:360px; height:200px; object-fit:cover; border-radius:10px; border:1px solid #1b1f28; display:block; margin:8px auto 0; cursor:pointer }
 
-    /* Derecha compacta (buscador arriba + tarjeta más cuadrada) */
-    .search-right{ position:relative; margin:0 0 10px }
+    /* Derecha (buscador arriba + tarjeta más cuadrada) */
+    .search-right{ position:relative; margin:0 0 10px; display:flex; gap:8px; align-items:center; }
     .search-right .input{ width:100%; padding:8px 12px; border-radius:12px; border:1px solid #223047; background:#131824; color:#dbe6f7; font-size:14px }
-    .suggestions{ position:absolute; top:42px; left:0; right:0; max-height:260px; overflow:auto; background:var(--card); border:1px solid #1b1f28; border-radius:10px; padding:6px; display:none; z-index:10 }
+
+    /* Filtro tipo */
+    #type-filter-btn{
+      white-space:nowrap; padding:8px 10px; border-radius:12px; border:1px solid #223047;
+      background:#131824; color:#dbe6f7; font-size:14px; cursor:pointer;
+    }
+    #type-menu{
+      position:absolute; right:0; top:44px; min-width:190px; background:var(--card);
+      border:1px solid #1b1f28; border-radius:10px; padding:6px; display:none; z-index:30;
+    }
+    #type-menu.open{ display:block; }
+    .type-opt{ padding:8px 10px; border-radius:8px; cursor:pointer; font-size:14px; }
+    .type-opt:hover{ background:#0f1218; }
+    .type-opt.active{ outline:1px solid #2b3a55; }
+
+    .suggestions{ position:absolute; top:44px; left:0; right:0; max-height:260px; overflow:auto; background:var(--card); border:1px solid #1b1f28; border-radius:10px; padding:6px; display:none; z-index:20 }
     .sug-item{ display:grid; grid-template-columns:18px 1fr auto; gap:8px; align-items:center; padding:6px; border-radius:8px; cursor:pointer; font-size:13px }
     .sug-item:hover{ background:#0f1218 }
     .sug-dot{ width:18px; height:18px; border-radius:6px; border:1px solid #1b1f28 }
     .sug-meta{ color:var(--muted); font-size:11px }
 
-    .main-sw{ width:100%; height:140px; border-radius:12px; border:1px solid #1b1f28; margin-bottom:10px } /* más alto → aspecto cuadrado */
+    .main-sw{ width:100%; height:140px; border-radius:12px; border:1px solid #1b1f28; margin-bottom:10px }
     h2{ margin:2px 0 8px 0; font-size:20px }
     .meta{ display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:13px; color:var(--muted) }
     .meta strong{ color:var(--text) }
@@ -43,22 +58,18 @@
     .sub h3{ margin:0; font-size:14px }
     .sub small{ color:var(--muted); font-size:12px }
     .sub .btn-mini{ padding:5px 8px; font-size:12px }
+    .chip{ display:inline-block; padding:2px 6px; border-radius:999px; border:1px solid #2b3a55; font-size:11px; color:#bcd0ff; margin-left:6px; }
 
     .ideas{ margin-top:8px; padding:10px; background:#0f1218; border:1px solid #1b1f28; border-radius:10px }
     .ideas h3{ margin:0 0 6px 0; font-size:15px }
 
-    /* Lightbox + animación (fade + zoom) */
+    /* Lightbox (fade + zoom) */
     .lightbox{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:9999; background:rgba(0,0,0,0); opacity:0; transition:opacity .2s ease, background .2s ease }
-    .lightbox.open{ display:flex; }             /* muestra el contenedor */
-    .lightbox.show{ opacity:1; background:rgba(0,0,0,.85); } /* inicia el fade */
+    .lightbox.open{ display:flex; }
+    .lightbox.show{ opacity:1; background:rgba(0,0,0,.85); }
     .lightbox img{ max-width:min(92vw,1100px); max-height:90vh; display:block; transform:scale(.96); transition:transform .2s ease, opacity .2s ease; opacity:0 }
     .lightbox.show img{ transform:scale(1); opacity:1 }
     .lightbox .close{ position:absolute; top:10px; right:10px; padding:6px 10px; border:0; border-radius:8px; background:#fff; cursor:pointer; z-index:2 }
-
-    @media (max-width:980px){
-      .app{ grid-template-columns:1fr }
-      #wheel{ width:100%; height:auto }
-    }
   </style>
 </head>
 <body>
@@ -76,18 +87,19 @@
       <img id="preview-img" class="preview-img" alt="Vista previa de filamento" />
     </section>
 
-    <!-- Panel derecho: buscador arriba + tarjeta -->
+    <!-- Panel derecho -->
     <section class="right">
-      <!-- Buscador -->
+      <!-- Buscador + filtro tipo -->
       <div class="search-right">
         <input id="q" class="input" type="search" placeholder="Buscar por color, marca o #hex…" autocomplete="off" />
+        <button id="type-filter-btn" type="button" aria-haspopup="listbox" aria-expanded="false">Tipo: Todos ▾</button>
+        <div id="type-menu" role="listbox" aria-label="Filtrar por tipo"></div>
         <div id="sugs" class="suggestions" role="listbox" aria-label="Resultados de búsqueda"></div>
       </div>
 
       <!-- Tarjeta principal -->
       <div class="main-sw" id="main-sw"></div>
       <h2 id="main-name">—</h2>
-
       <div class="meta">
         <div><strong>Marca:</strong> <span id="main-brand">—</span></div>
         <div><strong>Tipo:</strong> <span id="main-type">—</span></div>
@@ -96,7 +108,6 @@
         <div><strong>Resist.:</strong> <span id="main-strength">—</span></div>
         <div><strong>HEX:</strong> <span id="main-hex">—</span></div>
       </div>
-
       <div class="actions">
         <a id="main-link" class="btn" href="#" target="_blank" rel="noopener">Abrir en tienda</a>
         <button id="ideas-show" class="btn" type="button">Creador de Ideas</button>
@@ -112,7 +123,7 @@
         <div class="sub" id="sub-1">
           <div class="sw" id="sub1-sw"></div>
           <div>
-            <h3 id="sub1-name">—</h3>
+            <h3 id="sub1-name">— <span class="chip" id="sub1-chip" style="display:none;"></span></h3>
             <small id="sub1-desc">—</small>
           </div>
           <button class="btn btn-mini" id="sub1-btn">Ver</button>
@@ -120,7 +131,7 @@
         <div class="sub" id="sub-2">
           <div class="sw" id="sub2-sw"></div>
           <div>
-            <h3 id="sub2-name">—</h3>
+            <h3 id="sub2-name">— <span class="chip" id="sub2-chip" style="display:none;"></span></h3>
             <small id="sub2-desc">—</small>
           </div>
           <button class="btn btn-mini" id="sub2-btn">Ver</button>
@@ -129,7 +140,7 @@
     </section>
   </main>
 
-  <!-- Lightbox con fade + zoom -->
+  <!-- Lightbox -->
   <div class="lightbox" id="lightbox">
     <button class="close" id="lb-close">Cerrar</button>
     <img id="lb-img" alt="Imagen del filamento" />
@@ -139,7 +150,7 @@
     /* ======= CONFIG ======= */
     const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTZ-GFIahnmzB09C1GWCvAs1PaNXmpN2_Ed5taWtseTRlqx0P8-ZKJ28TOsvziFOw/pub?output=tsv";
 
-    /* ======= UTILIDADES COLOR ======= */
+    /* ======= UTIL ======= */
     const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
     const norm=s=>s==null?'':String(s).trim();
     const SPLIT_RE=/\s*[,;|\n]\s*/g;
@@ -148,11 +159,8 @@
     function hexToRgb(hex){ const h=hex.replace('#',''); return { r:parseInt(h.slice(0,2),16), g:parseInt(h.slice(2,4),16), b:parseInt(h.slice(4,6),16) } }
     function rgbToHex(r,g,b){ return '#'+[r,g,b].map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join('') }
     function rgbFromHsv(h,s,v){ h=+h; s=+s; v=+v; if(s===0){const g=Math.round(v*255); return {r:g,g,b:g}} let i=Math.floor(h*6), f=h*6-i, p=v*(1-s), q=v*(1-s*f), t=v*(1-s*(1-f)); i%=6; let r,g,b; if(i===0){r=v;g=t;b=p}else if(i===1){r=q;g=v;b=p}else if(i===2){r=p;g=v;b=t}else if(i===3){r=p;g=q;b=v}else if(i===4){r=t;g=p;b=v}else{r=v;g=p;b=q} return {r:Math.round(r*255),g:Math.round(g*255),b:Math.round(b*255)} }
-    function hsvFromRgb(r,g,b){ r/=255; g/=255; b/=255; const max=Math.max(r,g,b),min=Math.min(r,g,b); let h,s,v=max; const d=max-min; s=max===0?0:d/max; if(max===min){h=0}else{ switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;} h/=6 } return {h,s,v} }
-    function shiftHue(hex,deg){ const {r,g,b}=hexToRgb(hex); const hsv=hsvFromRgb(r,g,b); let h=hsv.h+(deg/360); h=(h%1+1)%1; const out=rgbFromHsv(h,Math.min(1,Math.max(0,hsv.s)),hsv.v); return rgbToHex(out.r,out.g,out.b) }
-    function paletteFromHex(hex){ const comp=shiftHue(hex,180); const tri1=shiftHue(hex,120), tri2=shiftHue(hex,-120); const ana1=shiftHue(hex,30), ana2=shiftHue(hex,-30); return { comp, tri:[tri1,tri2], ana:[ana1,ana2] } }
 
-    /* ======= CANVAS RUEDA ======= */
+    /* ======= CANVAS ======= */
     const wheel=document.getElementById('wheel'); const ctx=wheel.getContext('2d'); const CX=wheel.width/2, CY=wheel.height/2, R=160;
     let items=[], pool=[], lastRGB=null, dragging=false, currentItem=null;
 
@@ -161,6 +169,17 @@
 
     /* ======= IDEAS ======= */
     const parseIdeas = raw => { const s=norm(raw); if(!s) return []; return s.split(SPLIT_RE).map(x=>x.trim()).filter(Boolean) };
+    function renderIdeasList(item){
+      const ul=document.getElementById('ideas-list');
+      const box=document.getElementById('ideas-box');
+      ul.innerHTML='';
+      const list=(item.ideas && item.ideas.length)? item.ideas : generateIdeasOffline(item.hex, item);
+      list.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; ul.appendChild(li) });
+      box.style.display='block';
+    }
+    function hsvFromRgb(r,g,b){ r/=255; g/=255; b/=255; const max=Math.max(r,g,b),min=Math.min(r,g,b); let h,s,v=max; const d=max-min; s=max===0?0:d/max; if(max===min){h=0}else{ switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;} h/=6 } return {h,s,v} }
+    function shiftHue(hex,deg){ const {r,g,b}=hexToRgb(hex); const hsv=hsvFromRgb(r,g,b); let h=hsv.h+(deg/360); h=(h%1+1)%1; const out=rgbFromHsv(h,Math.min(1,Math.max(0,hsv.s)),hsv.v); return rgbToHex(out.r,out.g,out.b) }
+    function paletteFromHex(hex){ const comp=shiftHue(hex,180); const tri1=shiftHue(hex,120), tri2=shiftHue(hex,-120); const ana1=shiftHue(hex,30), ana2=shiftHue(hex,-30); return { comp, tri:[tri1,tri2], ana:[ana1,ana2] } }
     function generateIdeasOffline(hex, item){
       const pal=paletteFromHex(hex), out=[];
       out.push(`Combinar con complementario ${pal.comp} para alto contraste.`);
@@ -170,13 +189,50 @@
       if(item?.style?.toLowerCase().includes('silk')) out.push(`Silk: reducí velocidad para mejorar el brillo.`);
       return out;
     }
-    function renderIdeasList(item){
-      const box=document.getElementById('ideas-box');
-      const ul=document.getElementById('ideas-list');
-      ul.innerHTML='';
-      const list=(item.ideas && item.ideas.length)? item.ideas : generateIdeasOffline(item.hex, item);
-      list.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; ul.appendChild(li) });
-      box.style.display='block';
+
+    /* ======= FILTRO POR TIPO (persistente) ======= */
+    const TYPES = ["Todos", "PLA", "PLA+", "ABS", "PETG", "FLEX", "PLAFLEX"]; // ← Agregar aquí más tipos en el futuro
+    const TYPE_LS_KEY = "HOHO3D_TYPE";
+    let selectedType = localStorage.getItem(TYPE_LS_KEY) || "Todos";
+
+    function normalizeType(s){ return (s||"").toString().trim().toUpperCase(); }
+    function matchesType(item){ if (selectedType === "Todos") return true; return normalizeType(item.type) === normalizeType(selectedType); }
+
+    function buildTypeMenu(){
+      const btn  = document.getElementById("type-filter-btn");
+      const menu = document.getElementById("type-menu");
+      menu.innerHTML = "";
+      TYPES.forEach(t => {
+        const opt = document.createElement("div");
+        opt.className = "type-opt" + (t===selectedType ? " active" : "");
+        opt.textContent = t;
+        opt.setAttribute("role","option");
+        opt.onclick = () => {
+          selectedType = t;
+          localStorage.setItem(TYPE_LS_KEY, selectedType);           // persistencia
+          [...menu.querySelectorAll(".type-opt")].forEach(x=>x.classList.toggle("active", x===opt));
+          btn.textContent = `Tipo: ${t} ▾`;
+          menu.classList.remove("open");
+          btn.setAttribute("aria-expanded","false");
+          applySearch(document.getElementById("q").value || "");
+          if (lastRGB) rankAndRenderBy(lastRGB);
+        };
+        menu.appendChild(opt);
+      });
+      btn.textContent = `Tipo: ${selectedType} ▾`;
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const open = !menu.classList.contains("open");
+        document.querySelectorAll("#type-menu.open").forEach(m=>m.classList.remove("open"));
+        menu.classList.toggle("open", open);
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+      };
+      document.addEventListener("click", (e)=>{
+        if (!menu.contains(e.target) && e.target!==btn) {
+          menu.classList.remove("open");
+          btn.setAttribute("aria-expanded","false");
+        }
+      });
     }
 
     /* ======= CARGA SHEET ======= */
@@ -224,11 +280,15 @@
       const sw=document.getElementById(`${idPrefix}-sw`);
       const nm=document.getElementById(`${idPrefix}-name`);
       const ds=document.getElementById(`${idPrefix}-desc`);
+      const chip=document.getElementById(`${idPrefix}-chip`);
       const btn=document.getElementById(`${idPrefix}-btn`);
-      if(!item){ sw.style.background='transparent'; nm.textContent='—'; ds.textContent='—'; btn.onclick=null; return; }
+      if(!item){ sw.style.background='transparent'; nm.firstChild && (nm.firstChild.textContent='—'); ds.textContent='—'; btn.onclick=null; if(chip){chip.style.display='none'; chip.textContent='';} return; }
       sw.style.background=item.hex;
-      nm.textContent=item.name||'Sin nombre';
+      // nombre + chip de tipo
+      nm.innerHTML = `${item.name||'Sin nombre'} <span class="chip" id="${idPrefix}-chip">${item.type||'-'}</span>`;
       ds.textContent=`${item.brand||'-'} · ${item.type||'-'} · ${item.style||'-'}`;
+      const theChip = document.getElementById(`${idPrefix}-chip`);
+      if (theChip){ theChip.style.display = item.type ? 'inline-block' : 'none'; }
       btn.onclick=(e)=>{ e.preventDefault(); renderMainCard(item); if(item.img) openLightbox(item.img); };
     }
 
@@ -251,12 +311,15 @@
     }
 
     function rankAndRenderBy(rgb){
-      if(!pool.length) return;
-      const ranked=pool.map(it=>({it,d:colorDistance(rgb,it.rgb)})).sort((a,b)=>a.d-b.d).slice(0,3).map(x=>x.it);
+      // respetar filtro de tipo
+      const base = items.filter(matchesType);
+      if(!base.length) return;
+      const ranked=base.map(it=>({it,d:colorDistance(rgb,it.rgb)})).sort((a,b)=>a.d-b.d).slice(0,3).map(x=>x.it);
       const [a,b,c]=ranked;
       if(a){ renderMainCard(a); }
       setSub('sub1', b);
       setSub('sub2', c);
+      pool = base.slice();
     }
 
     /* ======= RUEDA ======= */
@@ -276,31 +339,25 @@
     function onMove(e){ if(!dragging) return; const p=e.touches?e.touches[0]:e; updateFromPoint(p.clientX,p.clientY) }
     function onUp(){ dragging=false }
 
-    /* ======= LIGHTBOX: fade + zoom ======= */
+    /* ======= LIGHTBOX ======= */
     const lb=document.getElementById('lightbox');
     const lbImg=document.getElementById('lb-img');
     function openLightbox(src){
       if(!src) return;
       lbImg.src=src;
-      lb.classList.add('open');             // mostrar
-      // forzar un frame y luego activar el fade/zoom
-      requestAnimationFrame(()=> lb.classList.add('show'));
+      lb.classList.add('open');
+      requestAnimationFrame(()=> lb.classList.add('show')); // fade + zoom
     }
     function closeLightbox(){
-      lb.classList.remove('show');          // iniciar fade out
-      setTimeout(()=>{                      // ocultar al terminar
-        if(!lb.classList.contains('show')){
-          lb.classList.remove('open');
-          lbImg.removeAttribute('src');
-        }
-      }, 220);
+      lb.classList.remove('show');
+      setTimeout(()=>{ if(!lb.classList.contains('show')){ lb.classList.remove('open'); lbImg.removeAttribute('src'); } }, 220);
     }
     document.getElementById('lb-close').addEventListener('click', closeLightbox);
     lb.addEventListener('click', (e)=>{ if(e.target.id==='lightbox') closeLightbox(); });
     lbImg.addEventListener('click', (e)=>e.stopPropagation());
     window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeLightbox(); });
 
-    /* ======= BUSCADOR (arriba tarjeta) ======= */
+    /* ======= BUSCADOR ======= */
     const inputQ=document.getElementById('q');
     const sugsBox=document.getElementById('sugs');
     function hideSugs(){ sugsBox.style.display='none'; sugsBox.innerHTML=''; }
@@ -320,12 +377,19 @@
       showSugs();
     }
     function applySearch(q){
-      q=(q||'').trim().toLowerCase();
-      if(!q){ hideSugs(); return; }
-      let results=[];
-      if(q.startsWith('#')){ const hx=normalizeHex(q)||''; results=items.filter(it=>it.hex.startsWith(hx)); }
-      else{ results=items.filter(it=>(it.name||'').toLowerCase().includes(q) || (it.brand||'').toLowerCase().includes(q)); }
-      renderSugs(results);
+      q=(q||"").trim().toLowerCase();
+      const base = items.filter(matchesType); // respeta el filtro
+      if(!q){
+        hideSugs();
+        pool = base.slice();
+        return;
+      }
+      if(q.startsWith('#')){
+        const hx=normalizeHex(q)||''; pool=base.filter(it=>it.hex.startsWith(hx));
+      }else{
+        pool=base.filter(it=>(it.name||'').toLowerCase().includes(q) || (it.brand||'').toLowerCase().includes(q));
+      }
+      renderSugs(pool);
     }
     inputQ.addEventListener('input', e=>applySearch(e.target.value));
     inputQ.addEventListener('focus', ()=>{ if(inputQ.value) applySearch(inputQ.value) });
@@ -333,7 +397,7 @@
 
     /* ======= INICIO ======= */
     drawWheel();
-    window.addEventListener('DOMContentLoaded', async()=>{ await cargar() });
+    window.addEventListener('DOMContentLoaded', async()=>{ await cargar(); buildTypeMenu(); });
     wheel.addEventListener('mousedown',onDown); window.addEventListener('mousemove',onMove); window.addEventListener('mouseup',onUp);
     wheel.addEventListener('touchstart',onDown,{passive:false}); window.addEventListener('touchmove',onMove,{passive:false}); window.addEventListener('touchend',onUp);
 
