@@ -11,19 +11,29 @@
     header{ padding:10px 16px; border-bottom:1px solid #1b1f28; background:#0b0c0fd9; position:sticky; top:0; z-index:5 }
     header h1{ margin:0; font-size:15px; font-weight:600 }
 
-    .app{ display:grid; grid-template-columns: 420px minmax(360px,520px); gap:16px; padding:16px; max-width:1120px; margin:0 auto; align-items:start }
+    .app{ display:grid; grid-template-columns: 440px minmax(380px,540px); gap:16px; padding:16px; max-width:1140px; margin:0 auto; align-items:start }
     .left,.right{ background:var(--card); border:1px solid #1b1f28; border-radius:12px; padding:12px }
 
-    /* ===== Rueda estilo Paletton ===== */
-    #wheel{ width:400px; height:400px; display:block; margin:4px auto 8px; border-radius:12px; border:1px solid #1b1f28; background:#0e1117; }
-    .current{ display:flex; gap:8px; align-items:center; font-size:13px; color:var(--muted); margin-top:6px }
-    .current .sw{ width:18px; height:18px; border-radius:5px; border:1px solid #1b1f28 }
-    .preview-img{ width:100%; max-width:380px; height:200px; object-fit:cover; border-radius:10px; border:1px solid #1b1f28; display:block; margin:10px auto 0; cursor:pointer }
+    /* === Picker orgánico (SV + H + inputs) === */
+    .picker{ display:grid; gap:10px }
+    .sv-wrap{ position:relative; width:400px; height:300px; margin:0 auto; }
+    #sv{ width:400px; height:300px; display:block; border-radius:10px; border:1px solid #1b1f28; cursor:crosshair; }
+    #sv-cursor{ position:absolute; width:14px; height:14px; border:2px solid #fff; border-radius:50%; transform:translate(-7px,-7px); pointer-events:none; box-shadow:0 0 0 1px #0008 }
+    .h-wrap{ position:relative; width:400px; height:18px; margin:0 auto; }
+    #hue{ width:400px; height:18px; display:block; border-radius:10px; border:1px solid #1b1f28; cursor:ew-resize; }
+    #hue-cursor{ position:absolute; top:50%; width:10px; height:20px; border:2px solid #fff; border-radius:4px; transform:translate(-5px,-50%); pointer-events:none; box-shadow:0 0 0 1px #0008 }
+    .inputs{ display:flex; gap:8px; align-items:center; justify-content:center }
+    .input{ padding:8px 10px; border-radius:10px; border:1px solid #223047; background:#131824; color:#dbe6f7; font-size:14px; width:110px }
+    .input.small{ width:80px; text-align:center }
 
-    /* Buscador + filtro */
+    .current{ display:flex; gap:8px; align-items:center; font-size:13px; color:var(--muted); margin-top:4px; justify-content:center }
+    .current .sw{ width:20px; height:20px; border-radius:6px; border:1px solid #1b1f28 }
+
+    .preview-img{ width:100%; max-width:400px; height:210px; object-fit:cover; border-radius:10px; border:1px solid #1b1f28; display:block; margin:10px auto 0; cursor:pointer }
+
+    /* Buscador + filtro tipo (panel derecho) */
     .search-right{ position:relative; margin:0 0 10px; display:flex; gap:8px; align-items:center; }
-    .search-right .input{ width:100%; padding:8px 12px; border-radius:12px; border:1px solid #223047; background:#131824; color:#dbe6f7; font-size:14px }
-
+    .search-right .input{ width:100%; }
     #type-filter-btn{
       white-space:nowrap; padding:8px 10px; border-radius:12px; border:1px solid #223047;
       background:#131824; color:#dbe6f7; font-size:14px; cursor:pointer;
@@ -62,7 +72,7 @@
     .ideas{ margin-top:8px; padding:10px; background:#0f1218; border:1px solid #1b1f28; border-radius:10px }
     .ideas h3{ margin:0 0 6px 0; font-size:15px }
 
-    /* Lightbox (fade + zoom) */
+    /* Lightbox con fade + zoom */
     .lightbox{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:9999; background:rgba(0,0,0,0); opacity:0; transition:opacity .2s ease, background .2s ease }
     .lightbox.open{ display:flex; }
     .lightbox.show{ opacity:1; background:rgba(0,0,0,.85); }
@@ -75,20 +85,37 @@
   <header><h1>Hoho3D · Búsqueda por color</h1></header>
 
   <main class="app">
-    <!-- Panel izquierdo -->
+    <!-- IZQUIERDA: Picker + vista previa -->
     <section class="left">
       <div id="loading" style="color:var(--muted); font-size:13px">Cargando catálogo...</div>
-      <canvas id="wheel" width="400" height="400" aria-label="Rueda de color estilo Paletton"></canvas>
+
+      <div class="picker">
+        <div class="sv-wrap">
+          <canvas id="sv" width="400" height="300" aria-label="Cuadro Saturación/Valor"></canvas>
+          <div id="sv-cursor"></div>
+        </div>
+        <div class="h-wrap">
+          <canvas id="hue" width="400" height="18" aria-label="Barra de Tono"></canvas>
+          <div id="hue-cursor"></div>
+        </div>
+        <div class="inputs">
+          <input id="hex" class="input" placeholder="#rrggbb" />
+          <input id="r" class="input small" placeholder="R" inputmode="numeric" />
+          <input id="g" class="input small" placeholder="G" inputmode="numeric" />
+          <input id="b" class="input small" placeholder="B" inputmode="numeric" />
+        </div>
+      </div>
+
       <div class="current">
         <div class="sw" id="sel-sw"></div>
         <div><strong>RGB:</strong> <span id="sel-rgb">—</span> · <strong>HEX:</strong> <span id="sel-hex">—</span></div>
       </div>
+
       <img id="preview-img" class="preview-img" alt="Vista previa de filamento" />
     </section>
 
-    <!-- Panel derecho -->
+    <!-- DERECHA: Buscador + tarjeta + sugerencias + ideas -->
     <section class="right">
-      <!-- Buscador + filtro tipo -->
       <div class="search-right">
         <input id="q" class="input" type="search" placeholder="Buscar por color, marca o #hex…" autocomplete="off" />
         <button id="type-filter-btn" type="button" aria-haspopup="listbox" aria-expanded="false">Tipo: Todos ▾</button>
@@ -96,7 +123,6 @@
         <div id="sugs" class="suggestions" role="listbox" aria-label="Resultados de búsqueda"></div>
       </div>
 
-      <!-- Tarjeta principal -->
       <div class="main-sw" id="main-sw"></div>
       <h2 id="main-name">—</h2>
       <div class="meta">
@@ -146,24 +172,33 @@
   </div>
 
   <script>
-    /* ======= CONFIG ======= */
+    /* ====== CONFIG ====== */
     const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTZ-GFIahnmzB09C1GWCvAs1PaNXmpN2_Ed5taWtseTRlqx0P8-ZKJ28TOsvziFOw/pub?output=tsv";
 
-    /* ======= UTIL ======= */
+    /* ====== UTIL ====== */
     const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
     const norm=s=>s==null?'':String(s).trim();
     const SPLIT_RE=/\s*[,;|\n]\s*/g;
 
-    function normalizeHex(h){ if(typeof h!=='string')return null; const s=h.trim(); const r3=/^#?[0-9a-fA-F]{3}$/, r6=/^#?[0-9a-fA-F]{6}$/; if(r3.test(s)){const p=s.replace('#','');return '#'+p.split('').map(c=>c+c).join('').toLowerCase()} if(r6.test(s))return '#'+s.replace('#','').toLowerCase(); return null }
+    function normalizeHex(h){ if(typeof h!=='string')return null; const s=h.trim();
+      const r3=/^#?[0-9a-fA-F]{3}$/; const r6=/^#?[0-9a-fA-F]{6}$/;
+      if(r3.test(s)){ const p=s.replace('#',''); return '#'+p.split('').map(c=>c+c).join('').toLowerCase(); }
+      if(r6.test(s)) return '#'+s.replace('#','').toLowerCase();
+      return null;
+    }
     function hexToRgb(hex){ const h=hex.replace('#',''); return { r:parseInt(h.slice(0,2),16), g:parseInt(h.slice(2,4),16), b:parseInt(h.slice(4,6),16) } }
     function rgbToHex(r,g,b){ return '#'+[r,g,b].map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join('') }
-    function rgbFromHsv(h,s,v){ h=+h; s=+s; v=+v; if(s===0){const g=Math.round(v*255); return {r:g,g,b:g}} let i=Math.floor(h*6), f=h*6-i, p=v*(1-s), q=v*(1-s*f), t=v*(1-s*(1-f)); i%=6; let r,g,b; if(i===0){r=v;g=t;b=p}else if(i===1){r=q;g=v;b=p}else if(i===2){r=p;g=v;b=t}else if(i===3){r=p;g=q;b=v}else if(i===4){r=t;g=p;b=v}else{r=v;g=p;b=q} return {r:Math.round(r*255),g:Math.round(g*255),b:Math.round(b*255)} }
-    function hsvFromRgb(r,g,b){ r/=255; g/=255; b/=255; const max=Math.max(r,g,b),min=Math.min(r,g,b); let h,s,v=max; const d=max-min; s=max===0?0:d/max; if(max===min){h=0}else{ switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break} h/=6 } return {h,s,v} }
+    function rgbFromHsv(h,s,v){ h=+h; s=+s; v=+v; if(s===0){const g=Math.round(v*255); return {r:g,g,b:g}}
+      let i=Math.floor(h*6), f=h*6-i, p=v*(1-s), q=v*(1-s*f), t=v*(1-s*(1-f)); i%=6; let r,g,b;
+      if(i===0){r=v;g=t;b=p}else if(i===1){r=q;g=v;b=p}else if(i===2){r=p;g=v;b=t}else if(i===3){r=p;g=q;b=v}else if(i===4){r=t;g=p;b=v}else{r=v;g=p;b=q}
+      return { r:Math.round(r*255), g:Math.round(g*255), b:Math.round(b*255) };
+    }
+    function hsvFromRgb(r,g,b){ r/=255; g/=255; b/=255; const max=Math.max(r,g,b),min=Math.min(r,g,b); let h,s,v=max; const d=max-min; s=max===0?0:d/max; if(max===min){h=0}else{switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break}h/=6} return {h,s,v}; }
 
-    /* ======= Estado global ======= */
+    /* ====== Estado ====== */
     let items=[], pool=[], lastRGB=null, currentItem=null;
 
-    /* ======= IDEAS ======= */
+    /* ====== Ideas (desde columna "ideas" o generadas) ====== */
     const parseIdeas = raw => { const s=norm(raw); if(!s) return []; return s.split(SPLIT_RE).map(x=>x.trim()).filter(Boolean) };
     function shiftHue(hex,deg){ const {r,g,b}=hexToRgb(hex); const hsv=hsvFromRgb(r,g,b); let h=hsv.h+(deg/360); h=(h%1+1)%1; const out=rgbFromHsv(h,Math.min(1,Math.max(0,hsv.s)),hsv.v); return rgbToHex(out.r,out.g,out.b) }
     function paletteFromHex(hex){ const comp=shiftHue(hex,180); const tri1=shiftHue(hex,120), tri2=shiftHue(hex,-120); const ana1=shiftHue(hex,30), ana2=shiftHue(hex,-30); return { comp, tri:[tri1,tri2], ana:[ana1,ana2] } }
@@ -185,12 +220,11 @@
       box.style.display='block';
     }
 
-    /* ======= Filtro por tipo (reseteado al cargar) ======= */
+    /* ====== Filtro por tipo ====== */
     const TYPES=["Todos","PLA","PLA+","ABS","PETG","FLEX","PLAFLEX"]; // ← agregar aquí más
-    let selectedType="Todos";                                    // ← reset por defecto
+    let selectedType="Todos";
     function normalizeType(s){ return (s||"").toString().trim().toUpperCase(); }
     function matchesType(item){ if(selectedType==="Todos") return true; return normalizeType(item.type)===normalizeType(selectedType); }
-
     function buildTypeMenu(){
       const btn=document.getElementById("type-filter-btn");
       const menu=document.getElementById("type-menu");
@@ -198,33 +232,21 @@
       TYPES.forEach(t=>{
         const opt=document.createElement("div");
         opt.className="type-opt"+(t===selectedType?" active":"");
-        opt.textContent=t;
-        opt.setAttribute("role","option");
-        opt.onclick=()=>{
-          selectedType=t;
-          [...menu.querySelectorAll(".type-opt")].forEach(x=>x.classList.toggle("active",x===opt));
-          btn.textContent=`Tipo: ${t} ▾`;
-          menu.classList.remove("open");
-          btn.setAttribute("aria-expanded","false");
-          applySearch(document.getElementById("q").value||"");
-          if(lastRGB) rankAndRenderBy(lastRGB);
+        opt.textContent=t; opt.setAttribute("role","option");
+        opt.onclick=()=>{ selectedType=t; [...menu.querySelectorAll(".type-opt")].forEach(x=>x.classList.toggle("active",x===opt));
+          btn.textContent=`Tipo: ${t} ▾`; menu.classList.remove("open"); btn.setAttribute("aria-expanded","false");
+          applySearch(document.getElementById("q").value||""); if(lastRGB) rankAndRenderBy(lastRGB);
         };
         menu.appendChild(opt);
       });
       btn.textContent=`Tipo: ${selectedType} ▾`;
-      btn.onclick=(e)=>{
-        e.stopPropagation();
-        const open=!menu.classList.contains("open");
+      btn.onclick=(e)=>{ e.stopPropagation(); const open=!menu.classList.contains("open");
         document.querySelectorAll("#type-menu.open").forEach(m=>m.classList.remove("open"));
-        menu.classList.toggle("open",open);
-        btn.setAttribute("aria-expanded",open?"true":"false");
-      };
-      document.addEventListener("click",(e)=>{
-        if(!menu.contains(e.target)&& e.target!==btn){ menu.classList.remove("open"); btn.setAttribute("aria-expanded","false"); }
-      });
+        menu.classList.toggle("open",open); btn.setAttribute("aria-expanded",open?"true":"false"); };
+      document.addEventListener("click",(e)=>{ if(!menu.contains(e.target)&& e.target!==btn){ menu.classList.remove("open"); btn.setAttribute("aria-expanded","false"); } });
     }
 
-    /* ======= Carga del Sheet ======= */
+    /* ====== Carga del Sheet ====== */
     async function cargar(){
       const el=document.getElementById('loading'); el.style.display='block';
       try{
@@ -264,7 +286,7 @@
       finally{ el.style.display='none' }
     }
 
-    /* ======= Subcards / tarjeta ======= */
+    /* ====== Tarjeta y sugerencias ====== */
     function setSub(idPrefix, item){
       const sw=document.getElementById(`${idPrefix}-sw`);
       const nm=document.getElementById(`${idPrefix}-name`);
@@ -279,10 +301,8 @@
       if(theChip){ theChip.style.display=item.type?'inline-block':'none'; }
       btn.onclick=(e)=>{ e.preventDefault(); renderMainCard(item); if(item.img) openLightbox(item.img); };
     }
-
     function renderMainCard(a){
-      if(!a) return;
-      currentItem=a;
+      if(!a) return; currentItem=a;
       document.getElementById('main-sw').style.background=a.hex;
       document.getElementById('main-name').textContent=a.name||'Sin nombre';
       document.getElementById('main-brand').textContent=a.brand||'-';
@@ -297,7 +317,6 @@
       else { prev.removeAttribute('src'); prev.style.display='none'; prev.onclick=null; }
       document.getElementById('ideas-box').style.display='none';
     }
-
     function colorDistance(a,b){ const dr=a.r-b.r,dg=a.g-b.g,db=a.b-b.b; return Math.sqrt(dr*dr+dg*dg+db*db) }
     function rankAndRenderBy(rgb){
       const base=items.filter(matchesType);
@@ -310,98 +329,7 @@
       pool=base.slice();
     }
 
-    /* ======= Rueda estilo Paletton (anillo H + disco SV) ======= */
-    const wheel=document.getElementById('wheel'); const ctx=wheel.getContext('2d');
-    const W=wheel.width, H=wheel.height, CX=W/2, CY=H/2;
-    const R_OUT=180;        // radio exterior del anillo
-    const R_IN =145;        // radio interior del anillo (grosor del anillo = R_OUT-R_IN)
-    const R_SV =120;        // radio del disco interno (S/V)
-
-    let hue=0, sat=1, val=1; // estado del picker
-
-    function drawHueRing(){
-      const img=ctx.createImageData(W,H);
-      for(let y=0;y<H;y++){
-        for(let x=0;x<W;x++){
-          const dx=x-CX, dy=y-CY, d=Math.hypot(dx,dy);
-          if(d>=R_IN && d<=R_OUT){
-            let ang=Math.atan2(dy,dx); if(ang<0) ang+=Math.PI*2;
-            const h=ang/(Math.PI*2);
-            const {r,g,b}=rgbFromHsv(h,1,1);
-            const i=(y*W+x)*4; img.data[i]=r; img.data[i+1]=g; img.data[i+2]=b; img.data[i+3]=255;
-          }
-          else if(d<=R_SV){
-            // disco SV: s=rad/R_SV ; v= 1 - (y_rel normalizado 0..1 desde centro a abajo)
-            const rr=d/R_SV;
-            const yrel=(y-CY)/R_SV; // -1 .. 1
-            const v=clamp(1 - (yrel+1)/2, 0, 1);    // arriba=1, abajo=0
-            const s=clamp(rr, 0, 1);
-            const {r,g,b}=rgbFromHsv(hue, s, v);
-            const i=(y*W+x)*4; img.data[i]=r; img.data[i+1]=g; img.data[i+2]=b; img.data[i+3]=255;
-          }
-        }
-      }
-      ctx.putImageData(img,0,0);
-
-      // guías
-      ctx.save();
-      ctx.strokeStyle="#111a"; ctx.lineWidth=1.2;
-      ctx.beginPath(); ctx.arc(CX,CY,R_IN,0,Math.PI*2); ctx.stroke();
-      ctx.beginPath(); ctx.arc(CX,CY,R_OUT,0,Math.PI*2); ctx.stroke();
-      ctx.beginPath(); ctx.arc(CX,CY,R_SV,0,Math.PI*2); ctx.stroke();
-      ctx.restore();
-
-      // cursores
-      // cursor hue (en el anillo)
-      const ang=hue*Math.PI*2;
-      const hx=Math.cos(ang)*(R_OUT-((R_OUT-R_IN)/2))+CX;
-      const hy=Math.sin(ang)*(R_OUT-((R_OUT-R_IN)/2))+CY;
-      ctx.beginPath();
-      ctx.strokeStyle="#fff"; ctx.lineWidth=2;
-      ctx.arc(hx,hy,7,0,Math.PI*2); ctx.stroke();
-
-      // cursor SV (en el disco)
-      const rr=sat*R_SV;
-      const sy=CY + (1 - val)*2*R_SV - R_SV; // invertir mapeo
-      // compensa rr en x por ángulo? usamos eje x relativo al hue (no hace falta)
-      // ubicamos por sat en radio y val en vertical, tomamos ángulo fijo 0
-      // mejor: SV en “sistema polar vertical”: x por sat*R_SV hacia la derecha, y por val
-      const sx=CX + rr;
-      ctx.beginPath();
-      ctx.strokeStyle="#fff"; ctx.lineWidth=2;
-      ctx.arc(sx, sy, 7, 0, Math.PI*2); ctx.stroke();
-    }
-
-    function pickAt(x,y){
-      const dx=x-CX, dy=y-CY, d=Math.hypot(dx,dy);
-      if(d>=R_IN && d<=R_OUT){
-        // anillo = H
-        let ang=Math.atan2(dy,dx); if(ang<0) ang+=Math.PI*2;
-        hue=ang/(Math.PI*2);
-        drawHueRing();
-      } else if(d<=R_SV){
-        // disco = S (radio), V (vertical)
-        sat=clamp(d/R_SV,0,1);
-        const yrel=(y-CY)/R_SV; val=clamp(1 - (yrel+1)/2, 0, 1);
-        drawHueRing();
-      } else {
-        return; // fuera
-      }
-      const {r,g,b}=rgbFromHsv(hue,sat,val);
-      const hex=rgbToHex(r,g,b);
-      lastRGB={r,g,b};
-      document.getElementById('sel-rgb').textContent=`${r}, ${g}, ${b}`;
-      document.getElementById('sel-hex').textContent=hex;
-      document.getElementById('sel-sw').style.background=hex;
-      rankAndRenderBy({r,g,b});
-    }
-
-    let dragging=false;
-    function onDown(e){ dragging=true; const p=e.touches?e.touches[0]:e; const rect=wheel.getBoundingClientRect(); pickAt((p.clientX-rect.left)*(W/rect.width),(p.clientY-rect.top)*(H/rect.height)); }
-    function onMove(e){ if(!dragging) return; const p=e.touches?e.touches[0]:e; const rect=wheel.getBoundingClientRect(); pickAt((p.clientX-rect.left)*(W/rect.width),(p.clientY-rect.top)*(H/rect.height)); }
-    function onUp(){ dragging=false }
-
-    /* ======= Lightbox ======= */
+    /* ====== Lightbox ====== */
     const lb=document.getElementById('lightbox'); const lbImg=document.getElementById('lb-img');
     function openLightbox(src){ if(!src) return; lbImg.src=src; lb.classList.add('open'); requestAnimationFrame(()=>lb.classList.add('show')); }
     function closeLightbox(){ lb.classList.remove('show'); setTimeout(()=>{ if(!lb.classList.contains('show')){ lb.classList.remove('open'); lbImg.removeAttribute('src'); } },220); }
@@ -410,13 +338,12 @@
     lbImg.addEventListener('click', e=>e.stopPropagation());
     window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLightbox(); });
 
-    /* ======= Buscador ======= */
+    /* ====== Buscador ====== */
     const inputQ=document.getElementById('q'); const sugsBox=document.getElementById('sugs');
     function hideSugs(){ sugsBox.style.display='none'; sugsBox.innerHTML=''; }
     function showSugs(){ sugsBox.style.display='block'; }
     function renderSugs(list){
-      sugsBox.innerHTML='';
-      if(!list.length){ hideSugs(); return; }
+      sugsBox.innerHTML=''; if(!list.length){ hideSugs(); return; }
       list.slice(0,80).forEach(it=>{
         const div=document.createElement('div'); div.className='sug-item';
         const dot=document.createElement('span'); dot.className='sug-dot'; dot.style.background=it.hex;
@@ -445,29 +372,120 @@
     inputQ.addEventListener('focus', ()=>{ if(inputQ.value) applySearch(inputQ.value) });
     document.addEventListener('click', e=>{ if(!sugsBox.contains(e.target) && e.target!==inputQ) hideSugs(); });
 
-    /* ======= Inicio (RESET al cargar) ======= */
+    /* ====== Picker (SV + Hue + inputs) ====== */
+    const sv = document.getElementById('sv');
+    const svCtx = sv.getContext('2d');
+    const hueBar = document.getElementById('hue');
+    const hueCtx = hueBar.getContext('2d');
+    const svCursor = document.getElementById('sv-cursor');
+    const hueCursor = document.getElementById('hue-cursor');
+    const hexInput = document.getElementById('hex');
+    const rInput = document.getElementById('r');
+    const gInput = document.getElementById('g');
+    const bInput = document.getElementById('b');
+
+    let H=0, S=1, V=1; // estado HSV del picker
+    function paintHueBar(){
+      const w=hueBar.width, h=hueBar.height;
+      const grad=hueCtx.createLinearGradient(0,0,w,0);
+      for(let i=0;i<=360;i+=10){ const {r,g,b}=rgbFromHsv(i/360,1,1); grad.addColorStop(i/360, `rgb(${r},${g},${b})`); }
+      hueCtx.fillStyle=grad; hueCtx.fillRect(0,0,w,h);
+    }
+    function paintSV(){
+      const w=sv.width, h=sv.height;
+      // capa: de blanco a color puro (horizontal)
+      const {r:hr,g:hg,b:hb}=rgbFromHsv(H,1,1);
+      const gradX=svCtx.createLinearGradient(0,0,w,0);
+      gradX.addColorStop(0, 'rgb(255,255,255)');
+      gradX.addColorStop(1, `rgb(${hr},${hg},${hb})`);
+      svCtx.fillStyle=gradX; svCtx.fillRect(0,0,w,h);
+      // capa: de transparente a negro (vertical)
+      const gradY=svCtx.createLinearGradient(0,0,0,h);
+      gradY.addColorStop(0, 'rgba(0,0,0,0)');
+      gradY.addColorStop(1, 'rgba(0,0,0,1)');
+      svCtx.fillStyle=gradY; svCtx.fillRect(0,0,w,h);
+    }
+    function updateCursors(){
+      // hue
+      const xH = H * hueBar.width;
+      hueCursor.style.left = `${xH}px`;
+      // sv
+      const xS = S * sv.width;
+      const yV = (1 - V) * sv.height;
+      svCursor.style.left = `${xS}px`; svCursor.style.top = `${yV}px`;
+    }
+    function emitColor(){
+      const {r,g,b}=rgbFromHsv(H,S,V);
+      const hex=rgbToHex(r,g,b);
+      lastRGB={r,g,b};
+      document.getElementById('sel-rgb').textContent=`${r}, ${g}, ${b}`;
+      document.getElementById('sel-hex').textContent=hex;
+      document.getElementById('sel-sw').style.background=hex;
+      if(hexInput.value.toLowerCase()!==hex) hexInput.value=hex;
+      if(+rInput.value!==r) rInput.value=r;
+      if(+gInput.value!==g) gInput.value=g;
+      if(+bInput.value!==b) bInput.value=b;
+      rankAndRenderBy({r,g,b});
+    }
+    function pickSV(clientX, clientY){
+      const rect=sv.getBoundingClientRect();
+      const x=clamp((clientX-rect.left)*(sv.width/rect.width),0,sv.width);
+      const y=clamp((clientY-rect.top)*(sv.height/rect.height),0,sv.height);
+      S = x / sv.width;
+      V = 1 - (y / sv.height);
+      updateCursors(); emitColor();
+    }
+    function pickHue(clientX){
+      const rect=hueBar.getBoundingClientRect();
+      const x=clamp((clientX-rect.left)*(hueBar.width/rect.width),0,hueBar.width);
+      H = x / hueBar.width;
+      paintSV();
+      updateCursors(); emitColor();
+    }
+
+    // eventos SV
+    let draggingSV=false, draggingH=false;
+    sv.addEventListener('mousedown',e=>{ draggingSV=true; pickSV(e.clientX,e.clientY); });
+    window.addEventListener('mousemove',e=>{ if(draggingSV) pickSV(e.clientX,e.clientY); if(draggingH) pickHue(e.clientX); });
+    window.addEventListener('mouseup',()=>{ draggingSV=false; draggingH=false; });
+    sv.addEventListener('touchstart',e=>{ const p=e.touches[0]; draggingSV=true; pickSV(p.clientX,p.clientY); },{passive:false});
+    window.addEventListener('touchmove',e=>{ if(draggingSV){ const p=e.touches[0]; pickSV(p.clientX,p.clientY); } if(draggingH){ const p=e.touches[0]; pickHue(p.clientX); } },{passive:false});
+    window.addEventListener('touchend',()=>{ draggingSV=false; draggingH=false; });
+    // eventos Hue
+    hueBar.addEventListener('mousedown',e=>{ draggingH=true; pickHue(e.clientX); });
+    hueBar.addEventListener('touchstart',e=>{ const p=e.touches[0]; draggingH=true; pickHue(p.clientX); },{passive:false});
+
+    // inputs manuales (HEX/RGB)
+    function setFromHexInput(){
+      const hx=normalizeHex(hexInput.value||''); if(!hx) return;
+      const {r,g,b}=hexToRgb(hx); const hsv=hsvFromRgb(r,g,b);
+      H=hsv.h; S=hsv.s; V=hsv.v; paintSV(); updateCursors(); emitColor();
+    }
+    hexInput.addEventListener('input', setFromHexInput);
+    function setFromRgbInputs(){
+      let r=clamp(parseInt(rInput.value||0,10),0,255);
+      let g=clamp(parseInt(gInput.value||0,10),0,255);
+      let b=clamp(parseInt(bInput.value||0,10),0,255);
+      const hsv=hsvFromRgb(r,g,b);
+      H=hsv.h; S=hsv.s; V=hsv.v; paintSV(); updateCursors(); emitColor();
+    }
+    [rInput,gInput,bInput].forEach(el=>el.addEventListener('input', setFromRgbInputs));
+
+    /* ====== Inicio ====== */
     async function init(){
-      // Reset buscador + filtro + ideas visibles
-      selectedType="Todos";
-      document.getElementById('type-filter-btn').textContent="Tipo: Todos ▾";
-      document.getElementById('q').value="";
-      document.getElementById('ideas-box').style.display='none';
+      // reset inicial (como pediste)
+      selectedType="Todos"; document.getElementById('type-filter-btn').textContent="Tipo: Todos ▾";
+      document.getElementById('q').value=""; document.getElementById('ideas-box').style.display='none';
 
       buildTypeMenu();
       await cargar();
 
-      // dibujar rueda con hue inicial (rojo) y SV máximos
-      hue=0; sat=1; val=1;
-      drawHueRing();
+      paintHueBar(); paintSV();
+      H=0; S=1; V=1; updateCursors(); emitColor(); // rojo puro de arranque
 
-      // enganchar drag
-      wheel.addEventListener('mousedown',onDown); window.addEventListener('mousemove',onMove); window.addEventListener('mouseup',onUp);
-      wheel.addEventListener('touchstart',onDown,{passive:false}); window.addEventListener('touchmove',onMove,{passive:false}); window.addEventListener('touchend',onUp);
+      document.getElementById('ideas-show').addEventListener('click', ()=>{ if(currentItem) renderIdeasList(currentItem); });
+      document.getElementById('ideas-refresh').addEventListener('click', ()=>{ if(currentItem) renderIdeasList(currentItem); });
     }
-
-    document.getElementById('ideas-show').addEventListener('click', ()=>{ if(currentItem) renderIdeasList(currentItem); });
-    document.getElementById('ideas-refresh').addEventListener('click', ()=>{ if(currentItem) renderIdeasList(currentItem); });
-
     window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
