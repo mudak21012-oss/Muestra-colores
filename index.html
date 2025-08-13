@@ -11,20 +11,19 @@
     header{ padding:10px 16px; border-bottom:1px solid #1b1f28; background:#0b0c0fd9; position:sticky; top:0; z-index:5 }
     header h1{ margin:0; font-size:15px; font-weight:600 }
 
-    .app{ display:grid; grid-template-columns: 380px minmax(360px,520px); gap:14px; padding:14px; max-width:1100px; margin:0 auto; align-items:start }
+    .app{ display:grid; grid-template-columns: 420px minmax(360px,520px); gap:16px; padding:16px; max-width:1120px; margin:0 auto; align-items:start }
     .left,.right{ background:var(--card); border:1px solid #1b1f28; border-radius:12px; padding:12px }
 
-    /* Izquierda */
-    #wheel{ width:340px; height:340px; display:block; margin:6px auto 8px; border-radius:10px; border:1px solid #1b1f28; cursor:crosshair }
-    .current{ display:flex; gap:8px; align-items:center; font-size:13px; color:var(--muted); margin-top:4px }
+    /* ===== Rueda estilo Paletton ===== */
+    #wheel{ width:400px; height:400px; display:block; margin:4px auto 8px; border-radius:12px; border:1px solid #1b1f28; background:#0e1117; }
+    .current{ display:flex; gap:8px; align-items:center; font-size:13px; color:var(--muted); margin-top:6px }
     .current .sw{ width:18px; height:18px; border-radius:5px; border:1px solid #1b1f28 }
-    .preview-img{ width:100%; max-width:360px; height:200px; object-fit:cover; border-radius:10px; border:1px solid #1b1f28; display:block; margin:8px auto 0; cursor:pointer }
+    .preview-img{ width:100%; max-width:380px; height:200px; object-fit:cover; border-radius:10px; border:1px solid #1b1f28; display:block; margin:10px auto 0; cursor:pointer }
 
-    /* Derecha (buscador arriba + tarjeta más cuadrada) */
+    /* Buscador + filtro */
     .search-right{ position:relative; margin:0 0 10px; display:flex; gap:8px; align-items:center; }
     .search-right .input{ width:100%; padding:8px 12px; border-radius:12px; border:1px solid #223047; background:#131824; color:#dbe6f7; font-size:14px }
 
-    /* Filtro tipo */
     #type-filter-btn{
       white-space:nowrap; padding:8px 10px; border-radius:12px; border:1px solid #223047;
       background:#131824; color:#dbe6f7; font-size:14px; cursor:pointer;
@@ -79,7 +78,7 @@
     <!-- Panel izquierdo -->
     <section class="left">
       <div id="loading" style="color:var(--muted); font-size:13px">Cargando catálogo...</div>
-      <canvas id="wheel" width="340" height="340" aria-label="Rueda de color HSV"></canvas>
+      <canvas id="wheel" width="400" height="400" aria-label="Rueda de color estilo Paletton"></canvas>
       <div class="current">
         <div class="sw" id="sel-sw"></div>
         <div><strong>RGB:</strong> <span id="sel-rgb">—</span> · <strong>HEX:</strong> <span id="sel-hex">—</span></div>
@@ -159,25 +158,13 @@
     function hexToRgb(hex){ const h=hex.replace('#',''); return { r:parseInt(h.slice(0,2),16), g:parseInt(h.slice(2,4),16), b:parseInt(h.slice(4,6),16) } }
     function rgbToHex(r,g,b){ return '#'+[r,g,b].map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join('') }
     function rgbFromHsv(h,s,v){ h=+h; s=+s; v=+v; if(s===0){const g=Math.round(v*255); return {r:g,g,b:g}} let i=Math.floor(h*6), f=h*6-i, p=v*(1-s), q=v*(1-s*f), t=v*(1-s*(1-f)); i%=6; let r,g,b; if(i===0){r=v;g=t;b=p}else if(i===1){r=q;g=v;b=p}else if(i===2){r=p;g=v;b=t}else if(i===3){r=p;g=q;b=v}else if(i===4){r=t;g=p;b=v}else{r=v;g=p;b=q} return {r:Math.round(r*255),g:Math.round(g*255),b:Math.round(b*255)} }
+    function hsvFromRgb(r,g,b){ r/=255; g/=255; b/=255; const max=Math.max(r,g,b),min=Math.min(r,g,b); let h,s,v=max; const d=max-min; s=max===0?0:d/max; if(max===min){h=0}else{ switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break} h/=6 } return {h,s,v} }
 
-    /* ======= CANVAS ======= */
-    const wheel=document.getElementById('wheel'); const ctx=wheel.getContext('2d'); const CX=wheel.width/2, CY=wheel.height/2, R=160;
-    let items=[], pool=[], lastRGB=null, dragging=false, currentItem=null;
-
-    function drawWheel(){ const img=ctx.createImageData(wheel.width,wheel.height); for(let y=0;y<wheel.height;y++){ for(let x=0;x<wheel.width;x++){ const dx=x-CX, dy=y-CY, dist=Math.hypot(dx,dy); if(dist<=R){ let ang=Math.atan2(dy,dx); if(ang<0) ang+=Math.PI*2; const hue=ang/(Math.PI*2), sat=dist/R; const {r,g,b}=rgbFromHsv(hue,sat,1); const i=(y*wheel.width+x)*4; img.data[i]=r; img.data[i+1]=g; img.data[i+2]=b; img.data[i+3]=255; } } } ctx.putImageData(img,0,0) }
-    function colorDistance(a,b){ const dr=a.r-b.r,dg=a.g-b.g,db=a.b-b.b; return Math.sqrt(dr*dr+dg*dg+db*db) }
+    /* ======= Estado global ======= */
+    let items=[], pool=[], lastRGB=null, currentItem=null;
 
     /* ======= IDEAS ======= */
     const parseIdeas = raw => { const s=norm(raw); if(!s) return []; return s.split(SPLIT_RE).map(x=>x.trim()).filter(Boolean) };
-    function renderIdeasList(item){
-      const ul=document.getElementById('ideas-list');
-      const box=document.getElementById('ideas-box');
-      ul.innerHTML='';
-      const list=(item.ideas && item.ideas.length)? item.ideas : generateIdeasOffline(item.hex, item);
-      list.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; ul.appendChild(li) });
-      box.style.display='block';
-    }
-    function hsvFromRgb(r,g,b){ r/=255; g/=255; b/=255; const max=Math.max(r,g,b),min=Math.min(r,g,b); let h,s,v=max; const d=max-min; s=max===0?0:d/max; if(max===min){h=0}else{ switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;} h/=6 } return {h,s,v} }
     function shiftHue(hex,deg){ const {r,g,b}=hexToRgb(hex); const hsv=hsvFromRgb(r,g,b); let h=hsv.h+(deg/360); h=(h%1+1)%1; const out=rgbFromHsv(h,Math.min(1,Math.max(0,hsv.s)),hsv.v); return rgbToHex(out.r,out.g,out.b) }
     function paletteFromHex(hex){ const comp=shiftHue(hex,180); const tri1=shiftHue(hex,120), tri2=shiftHue(hex,-120); const ana1=shiftHue(hex,30), ana2=shiftHue(hex,-30); return { comp, tri:[tri1,tri2], ana:[ana1,ana2] } }
     function generateIdeasOffline(hex, item){
@@ -189,53 +176,55 @@
       if(item?.style?.toLowerCase().includes('silk')) out.push(`Silk: reducí velocidad para mejorar el brillo.`);
       return out;
     }
+    function renderIdeasList(item){
+      const ul=document.getElementById('ideas-list');
+      const box=document.getElementById('ideas-box');
+      ul.innerHTML='';
+      const list=(item.ideas && item.ideas.length)? item.ideas : generateIdeasOffline(item.hex, item);
+      list.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; ul.appendChild(li) });
+      box.style.display='block';
+    }
 
-    /* ======= FILTRO POR TIPO (persistente) ======= */
-    const TYPES = ["Todos", "PLA", "PLA+", "ABS", "PETG", "FLEX", "PLAFLEX"]; // ← Agregar aquí más tipos en el futuro
-    const TYPE_LS_KEY = "HOHO3D_TYPE";
-    let selectedType = localStorage.getItem(TYPE_LS_KEY) || "Todos";
-
+    /* ======= Filtro por tipo (reseteado al cargar) ======= */
+    const TYPES=["Todos","PLA","PLA+","ABS","PETG","FLEX","PLAFLEX"]; // ← agregar aquí más
+    let selectedType="Todos";                                    // ← reset por defecto
     function normalizeType(s){ return (s||"").toString().trim().toUpperCase(); }
-    function matchesType(item){ if (selectedType === "Todos") return true; return normalizeType(item.type) === normalizeType(selectedType); }
+    function matchesType(item){ if(selectedType==="Todos") return true; return normalizeType(item.type)===normalizeType(selectedType); }
 
     function buildTypeMenu(){
-      const btn  = document.getElementById("type-filter-btn");
-      const menu = document.getElementById("type-menu");
-      menu.innerHTML = "";
-      TYPES.forEach(t => {
-        const opt = document.createElement("div");
-        opt.className = "type-opt" + (t===selectedType ? " active" : "");
-        opt.textContent = t;
+      const btn=document.getElementById("type-filter-btn");
+      const menu=document.getElementById("type-menu");
+      menu.innerHTML="";
+      TYPES.forEach(t=>{
+        const opt=document.createElement("div");
+        opt.className="type-opt"+(t===selectedType?" active":"");
+        opt.textContent=t;
         opt.setAttribute("role","option");
-        opt.onclick = () => {
-          selectedType = t;
-          localStorage.setItem(TYPE_LS_KEY, selectedType);           // persistencia
-          [...menu.querySelectorAll(".type-opt")].forEach(x=>x.classList.toggle("active", x===opt));
-          btn.textContent = `Tipo: ${t} ▾`;
+        opt.onclick=()=>{
+          selectedType=t;
+          [...menu.querySelectorAll(".type-opt")].forEach(x=>x.classList.toggle("active",x===opt));
+          btn.textContent=`Tipo: ${t} ▾`;
           menu.classList.remove("open");
           btn.setAttribute("aria-expanded","false");
-          applySearch(document.getElementById("q").value || "");
-          if (lastRGB) rankAndRenderBy(lastRGB);
+          applySearch(document.getElementById("q").value||"");
+          if(lastRGB) rankAndRenderBy(lastRGB);
         };
         menu.appendChild(opt);
       });
-      btn.textContent = `Tipo: ${selectedType} ▾`;
-      btn.onclick = (e) => {
+      btn.textContent=`Tipo: ${selectedType} ▾`;
+      btn.onclick=(e)=>{
         e.stopPropagation();
-        const open = !menu.classList.contains("open");
+        const open=!menu.classList.contains("open");
         document.querySelectorAll("#type-menu.open").forEach(m=>m.classList.remove("open"));
-        menu.classList.toggle("open", open);
-        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        menu.classList.toggle("open",open);
+        btn.setAttribute("aria-expanded",open?"true":"false");
       };
-      document.addEventListener("click", (e)=>{
-        if (!menu.contains(e.target) && e.target!==btn) {
-          menu.classList.remove("open");
-          btn.setAttribute("aria-expanded","false");
-        }
+      document.addEventListener("click",(e)=>{
+        if(!menu.contains(e.target)&& e.target!==btn){ menu.classList.remove("open"); btn.setAttribute("aria-expanded","false"); }
       });
     }
 
-    /* ======= CARGA SHEET ======= */
+    /* ======= Carga del Sheet ======= */
     async function cargar(){
       const el=document.getElementById('loading'); el.style.display='block';
       try{
@@ -275,20 +264,19 @@
       finally{ el.style.display='none' }
     }
 
-    /* ======= SUBCARDS / PRINCIPAL ======= */
+    /* ======= Subcards / tarjeta ======= */
     function setSub(idPrefix, item){
       const sw=document.getElementById(`${idPrefix}-sw`);
       const nm=document.getElementById(`${idPrefix}-name`);
       const ds=document.getElementById(`${idPrefix}-desc`);
       const chip=document.getElementById(`${idPrefix}-chip`);
       const btn=document.getElementById(`${idPrefix}-btn`);
-      if(!item){ sw.style.background='transparent'; nm.firstChild && (nm.firstChild.textContent='—'); ds.textContent='—'; btn.onclick=null; if(chip){chip.style.display='none'; chip.textContent='';} return; }
+      if(!item){ sw.style.background='transparent'; nm.firstChild && (nm.firstChild.textContent='—'); ds.textContent='—'; btn.onclick=null; if(chip){chip.style.display='none';chip.textContent='';} return; }
       sw.style.background=item.hex;
-      // nombre + chip de tipo
       nm.innerHTML = `${item.name||'Sin nombre'} <span class="chip" id="${idPrefix}-chip">${item.type||'-'}</span>`;
       ds.textContent=`${item.brand||'-'} · ${item.type||'-'} · ${item.style||'-'}`;
-      const theChip = document.getElementById(`${idPrefix}-chip`);
-      if (theChip){ theChip.style.display = item.type ? 'inline-block' : 'none'; }
+      const theChip=document.getElementById(`${idPrefix}-chip`);
+      if(theChip){ theChip.style.display=item.type?'inline-block':'none'; }
       btn.onclick=(e)=>{ e.preventDefault(); renderMainCard(item); if(item.img) openLightbox(item.img); };
     }
 
@@ -310,56 +298,120 @@
       document.getElementById('ideas-box').style.display='none';
     }
 
+    function colorDistance(a,b){ const dr=a.r-b.r,dg=a.g-b.g,db=a.b-b.b; return Math.sqrt(dr*dr+dg*dg+db*db) }
     function rankAndRenderBy(rgb){
-      // respetar filtro de tipo
-      const base = items.filter(matchesType);
+      const base=items.filter(matchesType);
       if(!base.length) return;
       const ranked=base.map(it=>({it,d:colorDistance(rgb,it.rgb)})).sort((a,b)=>a.d-b.d).slice(0,3).map(x=>x.it);
       const [a,b,c]=ranked;
       if(a){ renderMainCard(a); }
       setSub('sub1', b);
       setSub('sub2', c);
-      pool = base.slice();
+      pool=base.slice();
     }
 
-    /* ======= RUEDA ======= */
-    function updateFromPoint(clientX,clientY){
-      const rect=wheel.getBoundingClientRect(), scaleX=wheel.width/rect.width, scaleY=wheel.height/rect.height;
-      const x=(clientX-rect.left)*scaleX, y=(clientY-rect.top)*scaleY;
-      const dx=x-CX, dy=y-CY, dist=Math.hypot(dx,dy); if(dist>R) return;
-      let ang=Math.atan2(dy,dx); if(ang<0) ang+=Math.PI*2;
-      const hue=ang/(Math.PI*2), sat=dist/R; const {r,g,b}=rgbFromHsv(hue,sat,1);
-      const hex=rgbToHex(r,g,b); lastRGB={r,g,b};
+    /* ======= Rueda estilo Paletton (anillo H + disco SV) ======= */
+    const wheel=document.getElementById('wheel'); const ctx=wheel.getContext('2d');
+    const W=wheel.width, H=wheel.height, CX=W/2, CY=H/2;
+    const R_OUT=180;        // radio exterior del anillo
+    const R_IN =145;        // radio interior del anillo (grosor del anillo = R_OUT-R_IN)
+    const R_SV =120;        // radio del disco interno (S/V)
+
+    let hue=0, sat=1, val=1; // estado del picker
+
+    function drawHueRing(){
+      const img=ctx.createImageData(W,H);
+      for(let y=0;y<H;y++){
+        for(let x=0;x<W;x++){
+          const dx=x-CX, dy=y-CY, d=Math.hypot(dx,dy);
+          if(d>=R_IN && d<=R_OUT){
+            let ang=Math.atan2(dy,dx); if(ang<0) ang+=Math.PI*2;
+            const h=ang/(Math.PI*2);
+            const {r,g,b}=rgbFromHsv(h,1,1);
+            const i=(y*W+x)*4; img.data[i]=r; img.data[i+1]=g; img.data[i+2]=b; img.data[i+3]=255;
+          }
+          else if(d<=R_SV){
+            // disco SV: s=rad/R_SV ; v= 1 - (y_rel normalizado 0..1 desde centro a abajo)
+            const rr=d/R_SV;
+            const yrel=(y-CY)/R_SV; // -1 .. 1
+            const v=clamp(1 - (yrel+1)/2, 0, 1);    // arriba=1, abajo=0
+            const s=clamp(rr, 0, 1);
+            const {r,g,b}=rgbFromHsv(hue, s, v);
+            const i=(y*W+x)*4; img.data[i]=r; img.data[i+1]=g; img.data[i+2]=b; img.data[i+3]=255;
+          }
+        }
+      }
+      ctx.putImageData(img,0,0);
+
+      // guías
+      ctx.save();
+      ctx.strokeStyle="#111a"; ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.arc(CX,CY,R_IN,0,Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(CX,CY,R_OUT,0,Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(CX,CY,R_SV,0,Math.PI*2); ctx.stroke();
+      ctx.restore();
+
+      // cursores
+      // cursor hue (en el anillo)
+      const ang=hue*Math.PI*2;
+      const hx=Math.cos(ang)*(R_OUT-((R_OUT-R_IN)/2))+CX;
+      const hy=Math.sin(ang)*(R_OUT-((R_OUT-R_IN)/2))+CY;
+      ctx.beginPath();
+      ctx.strokeStyle="#fff"; ctx.lineWidth=2;
+      ctx.arc(hx,hy,7,0,Math.PI*2); ctx.stroke();
+
+      // cursor SV (en el disco)
+      const rr=sat*R_SV;
+      const sy=CY + (1 - val)*2*R_SV - R_SV; // invertir mapeo
+      // compensa rr en x por ángulo? usamos eje x relativo al hue (no hace falta)
+      // ubicamos por sat en radio y val en vertical, tomamos ángulo fijo 0
+      // mejor: SV en “sistema polar vertical”: x por sat*R_SV hacia la derecha, y por val
+      const sx=CX + rr;
+      ctx.beginPath();
+      ctx.strokeStyle="#fff"; ctx.lineWidth=2;
+      ctx.arc(sx, sy, 7, 0, Math.PI*2); ctx.stroke();
+    }
+
+    function pickAt(x,y){
+      const dx=x-CX, dy=y-CY, d=Math.hypot(dx,dy);
+      if(d>=R_IN && d<=R_OUT){
+        // anillo = H
+        let ang=Math.atan2(dy,dx); if(ang<0) ang+=Math.PI*2;
+        hue=ang/(Math.PI*2);
+        drawHueRing();
+      } else if(d<=R_SV){
+        // disco = S (radio), V (vertical)
+        sat=clamp(d/R_SV,0,1);
+        const yrel=(y-CY)/R_SV; val=clamp(1 - (yrel+1)/2, 0, 1);
+        drawHueRing();
+      } else {
+        return; // fuera
+      }
+      const {r,g,b}=rgbFromHsv(hue,sat,val);
+      const hex=rgbToHex(r,g,b);
+      lastRGB={r,g,b};
       document.getElementById('sel-rgb').textContent=`${r}, ${g}, ${b}`;
       document.getElementById('sel-hex').textContent=hex;
       document.getElementById('sel-sw').style.background=hex;
       rankAndRenderBy({r,g,b});
     }
-    function onDown(e){ dragging=true; const p=e.touches?e.touches[0]:e; updateFromPoint(p.clientX,p.clientY) }
-    function onMove(e){ if(!dragging) return; const p=e.touches?e.touches[0]:e; updateFromPoint(p.clientX,p.clientY) }
+
+    let dragging=false;
+    function onDown(e){ dragging=true; const p=e.touches?e.touches[0]:e; const rect=wheel.getBoundingClientRect(); pickAt((p.clientX-rect.left)*(W/rect.width),(p.clientY-rect.top)*(H/rect.height)); }
+    function onMove(e){ if(!dragging) return; const p=e.touches?e.touches[0]:e; const rect=wheel.getBoundingClientRect(); pickAt((p.clientX-rect.left)*(W/rect.width),(p.clientY-rect.top)*(H/rect.height)); }
     function onUp(){ dragging=false }
 
-    /* ======= LIGHTBOX ======= */
-    const lb=document.getElementById('lightbox');
-    const lbImg=document.getElementById('lb-img');
-    function openLightbox(src){
-      if(!src) return;
-      lbImg.src=src;
-      lb.classList.add('open');
-      requestAnimationFrame(()=> lb.classList.add('show')); // fade + zoom
-    }
-    function closeLightbox(){
-      lb.classList.remove('show');
-      setTimeout(()=>{ if(!lb.classList.contains('show')){ lb.classList.remove('open'); lbImg.removeAttribute('src'); } }, 220);
-    }
+    /* ======= Lightbox ======= */
+    const lb=document.getElementById('lightbox'); const lbImg=document.getElementById('lb-img');
+    function openLightbox(src){ if(!src) return; lbImg.src=src; lb.classList.add('open'); requestAnimationFrame(()=>lb.classList.add('show')); }
+    function closeLightbox(){ lb.classList.remove('show'); setTimeout(()=>{ if(!lb.classList.contains('show')){ lb.classList.remove('open'); lbImg.removeAttribute('src'); } },220); }
     document.getElementById('lb-close').addEventListener('click', closeLightbox);
-    lb.addEventListener('click', (e)=>{ if(e.target.id==='lightbox') closeLightbox(); });
-    lbImg.addEventListener('click', (e)=>e.stopPropagation());
-    window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeLightbox(); });
+    lb.addEventListener('click', e=>{ if(e.target.id==='lightbox') closeLightbox(); });
+    lbImg.addEventListener('click', e=>e.stopPropagation());
+    window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLightbox(); });
 
-    /* ======= BUSCADOR ======= */
-    const inputQ=document.getElementById('q');
-    const sugsBox=document.getElementById('sugs');
+    /* ======= Buscador ======= */
+    const inputQ=document.getElementById('q'); const sugsBox=document.getElementById('sugs');
     function hideSugs(){ sugsBox.style.display='none'; sugsBox.innerHTML=''; }
     function showSugs(){ sugsBox.style.display='block'; }
     function renderSugs(list){
@@ -378,31 +430,45 @@
     }
     function applySearch(q){
       q=(q||"").trim().toLowerCase();
-      const base = items.filter(matchesType); // respeta el filtro
-      if(!q){
-        hideSugs();
-        pool = base.slice();
-        return;
-      }
-      if(q.startsWith('#')){
-        const hx=normalizeHex(q)||''; pool=base.filter(it=>it.hex.startsWith(hx));
-      }else{
-        pool=base.filter(it=>(it.name||'').toLowerCase().includes(q) || (it.brand||'').toLowerCase().includes(q));
-      }
+      const base=items.filter(matchesType);
+      if(!q){ hideSugs(); pool=base.slice(); return; }
+      if(q.startsWith('#')){ const hx=normalizeHex(q)||''; pool=base.filter(it=>it.hex.startsWith(hx)); }
+      else { pool=base.filter(it=>(it.name||'').toLowerCase().includes(q) || (it.brand||'').toLowerCase().includes(q)); }
       renderSugs(pool);
     }
-    inputQ.addEventListener('input', e=>applySearch(e.target.value));
+    inputQ.addEventListener('input', e=>{
+      // cerrar menú de tipos al tipear
+      const menu=document.getElementById("type-menu"); const btn=document.getElementById("type-filter-btn");
+      menu.classList.remove("open"); btn.setAttribute("aria-expanded","false");
+      applySearch(e.target.value);
+    });
     inputQ.addEventListener('focus', ()=>{ if(inputQ.value) applySearch(inputQ.value) });
     document.addEventListener('click', e=>{ if(!sugsBox.contains(e.target) && e.target!==inputQ) hideSugs(); });
 
-    /* ======= INICIO ======= */
-    drawWheel();
-    window.addEventListener('DOMContentLoaded', async()=>{ await cargar(); buildTypeMenu(); });
-    wheel.addEventListener('mousedown',onDown); window.addEventListener('mousemove',onMove); window.addEventListener('mouseup',onUp);
-    wheel.addEventListener('touchstart',onDown,{passive:false}); window.addEventListener('touchmove',onMove,{passive:false}); window.addEventListener('touchend',onUp);
+    /* ======= Inicio (RESET al cargar) ======= */
+    async function init(){
+      // Reset buscador + filtro + ideas visibles
+      selectedType="Todos";
+      document.getElementById('type-filter-btn').textContent="Tipo: Todos ▾";
+      document.getElementById('q').value="";
+      document.getElementById('ideas-box').style.display='none';
+
+      buildTypeMenu();
+      await cargar();
+
+      // dibujar rueda con hue inicial (rojo) y SV máximos
+      hue=0; sat=1; val=1;
+      drawHueRing();
+
+      // enganchar drag
+      wheel.addEventListener('mousedown',onDown); window.addEventListener('mousemove',onMove); window.addEventListener('mouseup',onUp);
+      wheel.addEventListener('touchstart',onDown,{passive:false}); window.addEventListener('touchmove',onMove,{passive:false}); window.addEventListener('touchend',onUp);
+    }
 
     document.getElementById('ideas-show').addEventListener('click', ()=>{ if(currentItem) renderIdeasList(currentItem); });
     document.getElementById('ideas-refresh').addEventListener('click', ()=>{ if(currentItem) renderIdeasList(currentItem); });
+
+    window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>
