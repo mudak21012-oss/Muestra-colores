@@ -53,13 +53,18 @@
       <div><strong>Resist.:</strong> <span id="main-strength">—</span></div>
       <div><strong>HEX:</strong> <span id="main-hex">—</span></div>
     </div>
-    <div class="ideas" id="ideas-box" style="display:none;">
+
+    <!-- Botón de tienda arriba -->
+    <div style="margin-top:8px; margin-bottom:12px;">
+      <a id="main-link" class="btn" href="#" target="_blank" rel="noopener">Abrir en tienda</a>
+    </div>
+
+    <!-- Creador de Ideas -->
+    <button id="ideas-show" class="btn" type="button">Creador de Ideas</button>
+    <div class="ideas" id="ideas-box" style="display:none; margin-top:8px;">
       <h3>Ideas</h3>
       <ul id="ideas-list" style="margin:0; padding-left:18px;"></ul>
-      <button id="ideas-refresh" class="btn" type="button" style="margin-top:8px;">Regenerar ideas (offline)</button>
-    </div>
-    <div style="margin-top:8px">
-      <a id="main-link" class="btn" href="#" target="_blank" rel="noopener">Abrir en tienda</a>
+      <button id="ideas-refresh" class="btn" type="button" style="margin-top:8px;">Regenerar ideas</button>
     </div>
   </section>
 </main>
@@ -71,17 +76,21 @@ const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
 const norm=s=>s==null?'':String(s).trim();
 const SPLIT_RE=/\s*[,;|\n]\s*/g;
 
+// Color utils
 function normalizeHex(h){ if(typeof h!=='string')return null; const s=h.trim(); const r3=/^#?[0-9a-fA-F]{3}$/, r6=/^#?[0-9a-fA-F]{6}$/; if(r3.test(s)){const p=s.replace('#','');return '#'+p.split('').map(c=>c+c).join('').toLowerCase()} if(r6.test(s))return '#'+s.replace('#','').toLowerCase(); return null }
 function hexToRgb(hex){ const h=hex.replace('#',''); return { r:parseInt(h.slice(0,2),16), g:parseInt(h.slice(2,4),16), b:parseInt(h.slice(4,6),16) } }
 function rgbToHex(r,g,b){ return '#'+[r,g,b].map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join('') }
 function rgbFromHsv(h,s,v){ h=+h; s=+s; v=+v; if(s===0){const g=Math.round(v*255); return {r:g,g,b:g}} let i=Math.floor(h*6), f=h*6-i, p=v*(1-s), q=v*(1-s*f), t=v*(1-s*(1-f)); i%=6; let r,g,b; if(i===0){r=v;g=t;b=p}else if(i===1){r=q;g=v;b=p}else if(i===2){r=p;g=v;b=t}else if(i===3){r=p;g=q;b=v}else if(i===4){r=t;g=p;b=v}else{r=v;g=p;b=q} return {r:Math.round(r*255),g:Math.round(g*255),b:Math.round(b*255)} }
 function hsvFromRgb(r,g,b){ r/=255; g/=255; b/=255; const max=Math.max(r,g,b),min=Math.min(r,g,b); let h,s,v=max; const d=max-min; s=max===0?0:d/max; if(max===min){h=0}else{ switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;} h/=6 } return {h,s,v} }
+function shiftHue(hex,deg){ const {r,g,b}=hexToRgb(hex); const hsv=hsvFromRgb(r,g,b); let h=hsv.h+(deg/360); h=(h%1+1)%1; const out=rgbFromHsv(h,Math.min(1,Math.max(0,hsv.s)),hsv.v); return rgbToHex(out.r,out.g,out.b) }
+function paletteFromHex(hex){ const comp=shiftHue(hex,180); const tri1=shiftHue(hex,120), tri2=shiftHue(hex,-120); const ana1=shiftHue(hex,30), ana2=shiftHue(hex,-30); return { comp, tri:[tri1,tri2], ana:[ana1,ana2] } }
 
 const wheel=document.getElementById('wheel'); const ctx=wheel.getContext('2d'); const CX=wheel.width/2, CY=wheel.height/2, R=170;
 let items=[], pool=[], lastRGB=null, dragging=false, currentItem=null;
 
 function drawWheel(){ const img=ctx.createImageData(wheel.width,wheel.height); for(let y=0;y<wheel.height;y++){ for(let x=0;x<wheel.width;x++){ const dx=x-CX, dy=y-CY, dist=Math.hypot(dx,dy); if(dist<=R){ let ang=Math.atan2(dy,dx); if(ang<0) ang+=Math.PI*2; const hue=ang/(Math.PI*2), sat=dist/R; const {r,g,b}=rgbFromHsv(hue,sat,1); const i=(y*wheel.width+x)*4; img.data[i]=r; img.data[i+1]=g; img.data[i+2]=b; img.data[i+3]=255; } } } ctx.putImageData(img,0,0) }
 function colorDistance(a,b){ const dr=a.r-b.r,dg=a.g-b.g,db=a.b-b.b; return Math.sqrt(dr*dr+dg*dg+db*db) }
+
 const parseIdeas = raw => { const s=norm(raw); if(!s) return []; return s.split(SPLIT_RE).map(x=>x.trim()).filter(Boolean) };
 
 async function cargar(){
@@ -122,6 +131,16 @@ async function cargar(){
   finally{ el.style.display='none' }
 }
 
+function generateIdeasOffline(hex, item){
+  const pal=paletteFromHex(hex), out=[];
+  out.push(`Combinar con complementario ${pal.comp} para alto contraste.`);
+  out.push(`Paleta análoga: ${pal.ana[0]} + ${pal.ana[1]} para piezas suaves.`);
+  out.push(`Triádica: ${pal.tri[0]} + ${pal.tri[1]} para acentos.`);
+  if(item?.type?.toLowerCase().includes('pla')) out.push(`Temperatura sugerida: ${item.temp||'200–215°C'} (según boquilla).`);
+  if(item?.style?.toLowerCase().includes('silk')) out.push(`Silk: reducí velocidad para mejorar el brillo.`);
+  return out;
+}
+
 function renderIdeasList(item){
   const box=document.getElementById('ideas-box');
   const ul=document.getElementById('ideas-list');
@@ -145,7 +164,7 @@ function renderMainCard(a){
   document.getElementById('main-link').href=a.link||'#';
   const prev=document.getElementById('preview-img');
   if(a.img){ prev.src=a.img; prev.style.display='block' } else { prev.removeAttribute('src'); prev.style.display='none' }
-  renderIdeasList(a);
+  document.getElementById('ideas-box').style.display='none'; // ocultar ideas al cambiar de filamento
 }
 
 function rankAndRenderBy(rgb){
@@ -166,26 +185,22 @@ function updateFromPoint(clientX,clientY){
   document.getElementById('sel-sw').style.background=hex;
   rankAndRenderBy({r,g,b});
 }
+
 function onDown(e){ dragging=true; const p=e.touches?e.touches[0]:e; updateFromPoint(p.clientX,p.clientY) }
 function onMove(e){ if(!dragging) return; const p=e.touches?e.touches[0]:e; updateFromPoint(p.clientX,p.clientY) }
 function onUp(){ dragging=false }
 
-function shiftHue(hex,deg){ const {r,g,b}=hexToRgb(hex); const hsv=hsvFromRgb(r,g,b); let h=hsv.h+(deg/360); h=(h%1+1)%1; const out=rgbFromHsv(h,Math.min(1,Math.max(0,hsv.s)),hsv.v); return rgbToHex(out.r,out.g,out.b) }
-function paletteFromHex(hex){ const comp=shiftHue(hex,180); const tri1=shiftHue(hex,120), tri2=shiftHue(hex,-120); const ana1=shiftHue(hex,30), ana2=shiftHue(hex,-30); return { comp, tri:[tri1,tri2], ana:[ana1,ana2] } }
-function generateIdeasOffline(hex, item){
-  const pal=paletteFromHex(hex), out=[];
-  out.push(`Combinar con complementario ${pal.comp} para alto contraste.`);
-  out.push(`Paleta análoga: ${pal.ana[0]} + ${pal.ana[1]} para piezas suaves.`);
-  out.push(`Triádica: ${pal.tri[0]} + ${pal.tri[1]} para acentos.`);
-  if(item?.type?.toLowerCase().includes('pla')) out.push(`Temperatura sugerida: ${item.temp||'200–215°C'} (según boquilla).`);
-  if(item?.style?.toLowerCase().includes('silk')) out.push(`Silk: reduce velocidad para mejorar el brillo.`);
-  return out;
-}
-
+// UI eventos
+document.getElementById('ideas-show').addEventListener('click', ()=>{
+  if(currentItem){
+    renderIdeasList(currentItem);
+  }
+});
 document.getElementById('ideas-refresh').addEventListener('click', ()=>{
   if(currentItem) renderIdeasList(currentItem);
 });
 
+// Init
 drawWheel();
 window.addEventListener('DOMContentLoaded', async()=>{ await cargar() });
 wheel.addEventListener('mousedown',onDown); window.addEventListener('mousemove',onMove); window.addEventListener('mouseup',onUp);
